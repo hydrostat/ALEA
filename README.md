@@ -1,6 +1,8 @@
 
 # ALEA-R
 
+[![R-CMD-check](https://github.com/hydrostat/ALEA/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/hydrostat/ALEA/actions/workflows/R-CMD-check.yaml)
+
 ALEA-R is an R package for hydrological frequency analysis.
 
 It provides tools for exploratory summaries, probability distribution
