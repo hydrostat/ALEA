@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rcheck
+.DS_Store
+Thumbs.db
+/doc/
+/Meta/

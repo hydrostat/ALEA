@@ -1,0 +1,37 @@
+Package: ALEA
+Title: Hydrological Frequency Analysis
+Version: 0.1.0
+Authors@R: 
+    person(
+        given = "Wilson",
+        family = "Fernandes",
+        role = c("aut", "cre"),
+        email = "wilson@ehr.ufmg.br",
+        comment = c(ORCID = "0000-0002-9731-2320")
+    )
+Description: Provides tools for hydrological frequency analysis, including
+    exploratory summaries, distribution fitting, return-level estimation,
+    bootstrap confidence intervals, goodness-of-fit assessment, sample
+    diagnostics, AI-assisted distribution-selection support, batch workflows,
+    publication-ready plots, and export helpers.
+License: MIT + file LICENSE
+URL: https://github.com/hydrostat/ALEA
+BugReports: https://github.com/hydrostat/ALEA/issues
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Imports:
+    ggplot2,
+    lmom,
+    xgboost
+Suggests:
+    covr,
+    jsonlite,
+    knitr,
+    rmarkdown,
+    svglite,
+    testthat (>= 3.0.0),
+    trend,
+    withr
+VignetteBuilder: knitr
+Config/testthat/edition: 3

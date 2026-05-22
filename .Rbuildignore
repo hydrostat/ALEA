@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^dev$
+^planning$
+^references$
+^validation$
+^chat_summaries$
+^LICENSE\.md$
+^doc$
+^Meta$

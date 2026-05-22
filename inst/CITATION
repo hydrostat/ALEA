@@ -1,0 +1,16 @@
+bibentry(
+  bibtype = "Manual",
+  title = "ALEA-R: Hydrological Frequency Analysis in R",
+  author = c(
+    person(
+      given = "Wilson",
+      family = "Fernandes",
+      role = c("aut", "cre"),
+      email = "wilson@ehr.ufmg.br",
+      comment = c(ORCID = "0000-0002-9731-2320")
+    )
+  ),
+  year = "2026",
+  note = "R package version 0.1.0",
+  url = "https://github.com/hydrostat/ALEA"
+)

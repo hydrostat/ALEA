@@ -1,0 +1,194 @@
+---
+title: "Batch analysis with ALEA-R"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Batch analysis with ALEA-R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+# Batch analysis with ALEA-R
+
+This vignette shows how to use `alea_batch_fit()` to run the same frequency-analysis workflow for multiple stations or sites.
+
+Batch analysis is useful when the same candidate distributions, estimation methods, return periods, goodness-of-fit statistics, diagnostics, and AI-assisted selection workflow must be applied consistently across several hydrological samples.
+
+The examples use a small synthetic data set so that the vignette can be rebuilt quickly during package checks.
+
+```{r setup}
+library(ALEA)
+```
+
+# Example data
+
+The input data must be a data frame. The station identifier and observed value columns are required. A time column is optional, but recommended when available.
+
+```{r example-data}
+annual_maxima <- data.frame(
+  station = rep(c("A", "B", "C"), each = 16),
+  year = rep(2001:2016, times = 3),
+  value = c(
+    42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+    60.3, 45.7, 53.5, 57.6, 64.2, 59.1, 61.5, 66.0,
+    75.4, 80.2, 69.5, 91.3, 88.1, 84.6, 92.0, 86.7,
+    95.5, 90.1, 83.8, 97.2, 101.3, 94.7, 98.5, 103.4,
+    25.2, 29.4, 31.1, 28.7, 34.5, 32.0, 35.2, 30.8,
+    33.9, 37.4, 36.1, 39.2, 38.5, 40.0, 41.3, 43.1
+  )
+)
+
+head(annual_maxima)
+```
+
+# Run a batch workflow
+
+The following workflow fits all six initial ALEA-R candidate distributions to each station using L-moment estimation. It also computes return levels, goodness-of-fit results, sample diagnostics, and AI-assisted distribution-selection support.
+
+```{r batch-fit}
+batch <- alea_batch_fit(
+  data = annual_maxima,
+  station = "station",
+  time = "year",
+  value = "value",
+  distributions = c("gev", "gpa", "pe3", "ln2", "ln3", "gum"),
+  methods = c("lmom"),
+  return_period = c(10, 25, 50, 100),
+  gof = TRUE,
+  diagnostics = TRUE,
+  select = "ai"
+)
+
+batch
+```
+
+# Station metadata
+
+The `stations` table summarizes the samples processed by the batch workflow.
+
+```{r stations}
+stations <- alea_results(batch, "stations")
+stations
+```
+
+# Fit summaries
+
+The `fits` table records one row per attempted station-distribution-method fit. Successful fits are stored as full `alea_fit` objects in the `fit_objects` component.
+
+```{r fits}
+fits <- alea_results(batch, "fits")
+head(fits)
+```
+
+```{r fit-objects}
+fit_objects <- alea_results(batch, "fit_objects")
+length(fit_objects)
+```
+
+# AI-assisted selected models
+
+When `select = "ai"`, ALEA-R applies AI-assisted distribution-selection support at the station level. The selected distribution family is then resolved to an available fitted model using the method-priority rule.
+
+```{r selected-models}
+selected_models <- alea_results(batch, "selected_models")
+selected_models
+```
+
+FADS_AI output should be interpreted as model-based decision-support evidence for candidate distribution families. It is not proof of the true generating distribution and should not replace goodness-of-fit assessment, diagnostics, return-level uncertainty evaluation, or hydrological judgement.
+
+# Return levels
+
+When `return_period` is supplied, the batch object contains a flat return-level table for successful fitted models and requested return periods.
+
+```{r return-levels}
+return_levels <- alea_results(batch, "return_levels")
+head(return_levels)
+```
+
+# Goodness-of-fit results
+
+When `gof = TRUE`, the batch object contains goodness-of-fit statistics and information criteria for successful fitted models.
+
+```{r gof}
+gof <- alea_results(batch, "gof")
+head(gof)
+```
+
+Goodness-of-fit results summarize distribution fit from different perspectives. They should be interpreted together with diagnostics, return-level uncertainty, graphical checks, and hydrological judgement.
+
+# Diagnostics
+
+When `diagnostics = TRUE`, the batch object contains sample-level diagnostics for the fitted station samples.
+
+```{r diagnostics}
+diagnostics <- alea_results(batch, "diagnostics")
+head(diagnostics)
+```
+
+Diagnostics are intended to flag possible data-quality issues or assumption concerns. Diagnostic warnings do not automatically invalidate a fitted model.
+
+# Structured errors
+
+Batch workflows use structured error capture. A failure for one station, distribution, method, return-level calculation, goodness-of-fit calculation, diagnostic calculation, or AI-selection step does not stop the full workflow.
+
+Errors can be inspected with:
+
+```{r errors}
+errors <- alea_results(batch, "errors")
+errors
+```
+
+When no errors are recorded, the errors table is still returned as an empty data frame with stable columns. This makes downstream export and reporting workflows easier to automate.
+
+# Batch plots
+
+The `plot()` method for `alea_batch` objects provides summaries for selected models, return levels, goodness-of-fit results, and diagnostics.
+
+```{r plot-selected-models}
+plot(batch, type = "selected_models")
+```
+
+```{r plot-return-levels}
+plot(batch, type = "return_levels")
+```
+
+```{r plot-gof}
+plot(batch, type = "gof", statistic = "aic")
+```
+
+```{r plot-diagnostics-status}
+plot(batch, type = "diagnostics")
+```
+
+For one hypothesis-test diagnostic, use the `diagnostic` argument.
+
+```{r plot-single-diagnostic}
+plot(batch, type = "diagnostics", diagnostic = "stationarity")
+```
+
+# Exporting batch results
+
+The general export helper can export flat batch tables. Object-list fields such as `fit_objects` and `selection_objects` are intentionally not exported as CSV tables by default.
+
+```{r export-batch, eval = FALSE}
+alea_export(batch, path = "batch_results", type = "all")
+```
+
+# Recommended interpretation workflow
+
+For each station, a practical workflow is:
+
+1. Review the station metadata and data-quality diagnostics.
+2. Check which candidate models fitted successfully.
+3. Compare GOF statistics and information criteria.
+4. Review AI-assisted distribution-selection support.
+5. Inspect return-level estimates and plots.
+6. Make the final modelling decision using statistical evidence and hydrological judgement.

@@ -1,0 +1,256 @@
+---
+title: "Goodness-of-fit, diagnostics, and AI-assisted selection"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Goodness-of-fit, diagnostics, and AI-assisted selection}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+# Overview
+
+This vignette shows how to combine goodness-of-fit statistics, sample
+ diagnostics, and AI-assisted distribution-selection support in ALEA-R.
+
+These tools answer different questions:
+
+- goodness-of-fit statistics summarize how fitted distributions compare with
+  the observed sample;
+- diagnostics flag possible data-quality or assumption concerns;
+- FADS_AI provides model-based support for candidate distribution families.
+
+No single output should be interpreted in isolation. FADS_AI output is
+ decision-support evidence, not proof of the true generating distribution.
+Final model selection should also consider hydrological judgement, sample
+quality, return-level uncertainty, and the purpose of the analysis.
+
+# Example sample
+
+The example below uses a small synthetic annual-maximum-like sample. In real
+applications, use a quality-controlled hydrological series.
+
+```{r setup}
+library(ALEA)
+
+x <- c(
+  42.1, 38.5, 51.3, 47.0, 62.4,
+  55.2, 49.8, 58.1, 60.3, 45.7,
+  66.8, 53.9, 71.2, 64.0, 57.6,
+  69.5, 73.1, 61.7, 52.4, 75.8,
+  68.2, 59.9, 77.4, 81.0, 72.6
+)
+```
+
+# Fit candidate distributions
+
+For illustration, attempt to fit the six distributions supported in the initial
+ALEA-R implementation using L-moments. Some distribution/sample combinations may
+be invalid for a specific estimation method, so this vignette keeps only
+successful fits for the comparison tables and plots.
+
+```{r fit-candidates}
+distributions <- c("gev", "gpa", "pe3", "ln2", "ln3", "gum")
+
+fit_one <- function(dist) {
+  tryCatch(
+    alea_fit(x, distribution = dist, method = "lmom"),
+    error = function(e) NULL
+  )
+}
+
+fits <- lapply(distributions, fit_one)
+names(fits) <- distributions
+fits <- Filter(Negate(is.null), fits)
+
+names(fits)
+```
+
+# Goodness-of-fit statistics
+
+`alea_gof()` computes empirical distribution function statistics and
+information criteria for one fitted model.
+
+```{r gof-single}
+reference_fit <- fits[[1]]
+gof_reference <- alea_gof(reference_fit)
+gof_reference
+```
+
+The default output includes:
+
+- Kolmogorov-Smirnov statistic (`ks`);
+- Cramer-von Mises statistic (`cvm`);
+- Anderson-Darling statistic (`ad`);
+- log-likelihood (`loglik`);
+- Akaike information criterion (`aic`);
+- Bayesian information criterion (`bic`).
+
+Calibrated goodness-of-fit p-values and chi-square goodness-of-fit tests are
+not part of the initial implementation.
+
+```{r plot-gof-single}
+plot(gof_reference, type = "statistic")
+```
+
+# Compare candidate distributions with GOF
+
+A practical workflow is to compute goodness-of-fit statistics for all candidate
+models and inspect the results together.
+
+```{r gof-all}
+gof_all <- do.call(rbind, lapply(fits, alea_gof))
+gof_all
+```
+
+The rank plot helps compare candidate models across statistics. Rank 1
+represents the best model for each statistic.
+
+```{r plot-gof-rank}
+plot(gof_all, type = "rank")
+```
+
+A distribution that ranks well across several statistics may deserve further
+attention. However, goodness-of-fit statistics should not be treated as the only
+basis for final model selection, especially for short hydrological records.
+
+# Sample diagnostics
+
+Diagnostics evaluate the sample and fitted-object data context. They are not
+replacement goodness-of-fit tests.
+
+```{r diagnostics}
+diagnostics <- alea_diagnostics(reference_fit)
+diagnostics
+```
+
+Simple diagnostics check sample size, missing or non-finite values, ties, range
+adequacy, and skewness. When the suggested package `trend` is available,
+hypothesis-based diagnostics can also evaluate randomness, independence,
+homogeneity, and stationarity.
+
+```{r plot-diagnostics-status}
+plot(diagnostics, type = "status")
+```
+
+For hypothesis-test diagnostics, p-values can also be displayed directly.
+
+```{r plot-diagnostics-pvalue}
+plot(diagnostics, type = "p_value")
+```
+
+Diagnostic warnings should trigger review. They do not automatically invalidate
+a fitted model. For example, a warning about sample size may indicate that
+return-level uncertainty should be interpreted more cautiously.
+
+# AI-assisted distribution selection
+
+`alea_select()` applies the bundled FADS_AI lightweight operational application
+model to the observed sample and returns model-based support for candidate
+distribution families.
+
+```{r ai-selection}
+selection <- alea_select(x)
+selection
+```
+
+The ranking table shows the model-based support assigned to each candidate
+family.
+
+```{r ai-ranking}
+as.data.frame(selection)
+```
+
+```{r plot-ai-selection}
+plot(selection)
+```
+
+FADS_AI probabilities should be reported as model-based support, not as proof
+of the true distribution. The top-ranked family should be interpreted together
+with diagnostics, GOF behavior, return-level uncertainty, and hydrological
+knowledge.
+
+# Combining evidence
+
+A cautious workflow is:
+
+1. Check diagnostics before interpreting model fits.
+2. Compare several candidate distributions with GOF statistics.
+3. Review FADS_AI support and the top1-top2 probability margin.
+4. Estimate return levels and uncertainty for plausible candidates.
+5. Use hydrological judgement before choosing a final model.
+
+The following compact table joins three types of evidence: AIC ranking,
+AI-assisted support, and diagnostic status for the sample used in the fitted
+object.
+
+```{r compact-evidence}
+aic_table <- subset(gof_all, statistic == "aic")
+aic_table <- aic_table[order(aic_table$estimate), c("distribution", "method", "estimate")]
+names(aic_table)[names(aic_table) == "estimate"] <- "aic"
+aic_table$aic_rank <- seq_len(nrow(aic_table))
+
+ai_table <- as.data.frame(selection)[, c("distribution", "probability", "rank")]
+names(ai_table) <- c("distribution", "ai_probability", "ai_rank")
+
+merge(aic_table, ai_table, by = "distribution", all.x = TRUE)
+```
+
+This type of table is useful for reporting, but it should not be reduced to an
+automatic rule. Differences among candidate distributions can be small, and
+uncertainty may be large for high return periods.
+
+# Return-level uncertainty for plausible candidates
+
+After narrowing candidate distributions, inspect return levels and uncertainty.
+The example below uses the reference fit selected above. In a full analysis,
+repeat this step for other plausible candidates.
+
+```{r return-level-ci}
+ci <- confint(
+  reference_fit,
+  parm = "return_level",
+  return_period = c(10, 25, 50, 100),
+  level = 0.95,
+  method = "bootstrap",
+  n_boot = 50,
+  seed = 123
+)
+
+ci
+```
+
+```{r plot-return-level-ci}
+plot(ci)
+```
+
+The small `n_boot` value is used only to keep the vignette lightweight. For
+substantive analyses, use a larger number of bootstrap resamples and assess the
+stability of the interval estimates.
+
+# Reporting guidance
+
+When reporting results, prefer language such as:
+
+> The FADS_AI model assigned the highest support to one candidate family for
+> this sample. GOF statistics and diagnostics were reviewed together with
+> return-level uncertainty before selecting the final model.
+
+Avoid statements such as:
+
+> The AI proved that the true distribution is GEV.
+
+# Summary
+
+Goodness-of-fit statistics, diagnostics, AI-assisted selection, and return-level
+uncertainty are complementary. ALEA-R is designed to keep these outputs
+structured and reportable, while leaving the final modelling decision to the
+analyst.

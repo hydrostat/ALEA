@@ -1,0 +1,310 @@
+---
+title: "Single-site frequency analysis with ALEA-R"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Single-site frequency analysis with ALEA-R}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+# Overview
+
+This vignette shows a complete single-site hydrological frequency-analysis
+workflow with ALEA-R.
+
+The workflow includes:
+
+- preparing an observed sample;
+- fitting a probability distribution;
+- estimating return levels;
+- computing bootstrap confidence intervals;
+- assessing goodness-of-fit;
+- checking sample diagnostics;
+- obtaining AI-assisted distribution-selection support;
+- creating plots for reporting.
+
+ALEA-R uses S3 objects for user-facing results. The examples below use the
+initial candidate distributions supported by the package: `gev`, `gpa`, `pe3`,
+`ln2`, `ln3`, and `gum`.
+
+# Setup
+
+```{r setup}
+library(ALEA)
+```
+
+# Example sample
+
+For this vignette, we use a small synthetic annual-maximum-like sample. In a real
+application, `x` should be replaced by an observed hydrological series such as
+annual maximum rainfall, annual peak discharge, or another frequency-analysis
+variable.
+
+```{r sample-data}
+x <- c(
+  42.1, 38.5, 51.3, 47.0, 62.4,
+  55.2, 49.8, 58.1, 60.3, 45.7,
+  66.8, 53.4, 57.9, 63.2, 70.5,
+  48.6, 52.7, 59.4, 61.8, 56.1,
+  73.2, 67.4, 64.9, 69.1, 75.6
+)
+
+summary(x)
+```
+
+# Fit one distribution
+
+The main fitting function is `alea_fit()`. It fits one supported probability
+distribution to one numeric sample using one estimation method.
+
+Here we fit a GEV distribution with L-moment estimation.
+
+```{r fit-gev}
+fit <- alea_fit(
+  x,
+  distribution = "gev",
+  method = "lmom"
+)
+
+fit
+coef(fit)
+```
+
+The fitted object stores the original sample and fitted parameters. Downstream
+workflows use this object directly, avoiding repeated specification of the
+sample, distribution, and estimation method.
+
+# Return levels
+
+Return levels are estimated with `alea_return_level()`. The argument
+`return_period` defines the return periods of interest.
+
+```{r return-levels}
+return_period <- c(2, 5, 10, 25, 50, 100)
+
+rl <- alea_return_level(
+  fit,
+  return_period = return_period
+)
+
+rl
+```
+
+The returned object is an `alea_return_level` data frame. It can be converted to
+a plain data frame when needed.
+
+```{r return-levels-data-frame}
+as.data.frame(rl)
+```
+
+# Bootstrap confidence intervals
+
+Return-level confidence intervals are computed with the S3 `confint()` method
+for `alea_fit` objects.
+
+The initial implementation provides percentile bootstrap confidence intervals
+for return levels. Parameter confidence intervals, asymptotic return-level
+intervals, and generic delta-method intervals are not implemented in the initial
+release.
+
+The example uses a small number of bootstrap resamples to keep vignette checks
+fast. For applied analyses, use a larger value such as `n_boot = 500` or more,
+depending on the required precision and available computing time.
+
+```{r bootstrap-ci}
+ci <- confint(
+  fit,
+  parm = "return_level",
+  return_period = return_period,
+  level = 0.95,
+  method = "bootstrap",
+  n_boot = 50,
+  seed = 123
+)
+
+ci
+```
+
+The output records the requested number of bootstrap resamples and the number of
+successful and failed resamples.
+
+```{r bootstrap-ci-data-frame}
+as.data.frame(ci)
+```
+
+# Goodness-of-fit
+
+Goodness-of-fit statistics are computed with `alea_gof()`.
+
+```{r gof}
+gof <- alea_gof(fit)
+
+gof
+```
+
+The initial goodness-of-fit workflow reports empirical distribution function
+statistics and information criteria, including Kolmogorov-Smirnov,
+Cramer-von Mises, Anderson-Darling, log-likelihood, AIC, and BIC.
+
+Calibrated goodness-of-fit p-values and chi-square goodness-of-fit tests are
+deferred in the initial implementation.
+
+```{r gof-data-frame}
+as.data.frame(gof)
+```
+
+# Sample diagnostics
+
+Sample diagnostics are computed with `alea_diagnostics()`. Diagnostics are
+sample-level checks intended to flag possible data-quality issues or assumption
+concerns. They are not distribution-specific goodness-of-fit tests.
+
+```{r diagnostics}
+diagnostics <- alea_diagnostics(fit)
+
+diagnostics
+```
+
+Diagnostic warnings do not automatically invalidate a fitted model. They should
+be reviewed together with goodness-of-fit results, return-level uncertainty, and
+hydrological judgement.
+
+```{r diagnostics-data-frame}
+as.data.frame(diagnostics)
+```
+
+# AI-assisted distribution selection
+
+ALEA-R includes AI-assisted distribution-selection support through `alea_select()`.
+The default engine is the bundled FADS_AI lightweight operational application
+model.
+
+```{r ai-selection}
+selection <- alea_select(x)
+
+selection
+```
+
+The ranking table gives model-based support for each candidate distribution.
+
+```{r ai-ranking}
+as.data.frame(selection)
+```
+
+FADS_AI output should be interpreted as decision-support evidence for candidate
+distribution families. It is not proof of the true generating distribution and
+should not replace goodness-of-fit assessment, diagnostics, return-level
+uncertainty evaluation, or hydrological judgement.
+
+# Plots
+
+ALEA-R plot methods return `ggplot` objects, so they can be displayed,
+customized, and saved with standard ggplot2 workflows.
+
+## Fitted distribution plots
+
+```{r plot-density}
+plot(fit, type = "density")
+```
+
+```{r plot-cdf}
+plot(fit, type = "cdf")
+```
+
+```{r plot-qq}
+plot(fit, type = "qq")
+```
+
+```{r plot-pp}
+plot(fit, type = "pp")
+```
+
+## Return-level plots
+
+```{r plot-return-level-fit}
+plot(fit, type = "return_level", return_period = return_period)
+```
+
+```{r plot-return-level-object}
+plot(rl)
+```
+
+```{r plot-return-level-ci}
+plot(ci)
+```
+
+Return-level plots use a Gumbel return-period axis by default. The scale can be
+changed with `return_period_scale = "log"` or `return_period_scale = "linear"`.
+
+```{r plot-return-level-log-scale}
+plot(rl, return_period_scale = "log")
+```
+
+## Goodness-of-fit and diagnostics plots
+
+```{r plot-gof-statistic}
+plot(gof, type = "statistic")
+```
+
+```{r plot-diagnostics-status}
+plot(diagnostics, type = "status")
+```
+
+```{r plot-diagnostics-p-value}
+plot(diagnostics, type = "p_value")
+```
+
+## AI-selection plot
+
+```{r plot-ai-selection}
+plot(selection)
+```
+
+# Exporting results
+
+Plot objects can be saved with `alea_save_plot()`.
+
+```{r save-plot, eval = FALSE}
+p <- plot(fit, type = "return_level", return_period = return_period)
+
+alea_save_plot(
+  p,
+  filename = "single_site_return_level.png",
+  width = 7,
+  height = 5,
+  dpi = 300
+)
+```
+
+Data-frame-like outputs can be exported with `alea_export()`.
+
+```{r export-tables, eval = FALSE}
+alea_export(rl, path = "single_site_return_levels.csv")
+alea_export(as.data.frame(gof), path = "single_site_gof.csv")
+alea_export(as.data.frame(diagnostics), path = "single_site_diagnostics.csv")
+```
+
+# Interpretation
+
+A single-site frequency analysis should not rely on one diagnostic or one model
+selection criterion alone. In practice, the fitted distribution should be
+reviewed together with:
+
+- the fitted density, CDF, Q-Q, P-P, and return-level plots;
+- return-level uncertainty;
+- goodness-of-fit statistics and information criteria;
+- sample diagnostics;
+- AI-assisted distribution-selection support;
+- hydrological knowledge of the site and process.
+
+The FADS_AI ranking provides model-based decision-support evidence for the
+candidate families. It is not proof of the true generating distribution.

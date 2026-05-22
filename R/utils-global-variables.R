@@ -1,0 +1,22 @@
+utils::globalVariables(c(
+  "count",
+  "diagnostic",
+  "distribution",
+  "distribution_label",
+  "estimate",
+  "lower",
+  "model_label",
+  "observed",
+  "p_value",
+  "probability",
+  "rank_value",
+  "reject",
+  "return_level",
+  "return_period_axis",
+  "selected",
+  "station",
+  "statistic",
+  "status",
+  "upper",
+  "value"
+))

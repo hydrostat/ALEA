@@ -1,0 +1,211 @@
+---
+title: "ALEA-R overview"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ALEA-R overview}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+# ALEA-R overview
+
+ALEA-R is an R package for hydrological frequency analysis.
+
+It provides tools for exploratory summaries, probability distribution fitting,
+return-level estimation, bootstrap confidence intervals, goodness-of-fit
+assessment, sample diagnostics, AI-assisted distribution-selection support,
+batch analysis, publication-ready plots, and export helpers.
+
+# Supported distributions
+
+The initial implementation supports six candidate distributions:
+
+| Code | Distribution |
+|---|---|
+| `gev` | Generalized Extreme Value |
+| `gpa` | Generalized Pareto |
+| `pe3` | Pearson type III |
+| `ln2` | Two-parameter lognormal |
+| `ln3` | Three-parameter lognormal |
+| `gum` | Gumbel |
+
+LP3 is not included in the initial implementation.
+
+# Main object classes
+
+ALEA-R uses S3 classes for user-facing objects. The main classes include:
+
+| Class | Purpose |
+|---|---|
+| `alea_fit` | One fitted distribution for one sample |
+| `alea_return_level` | Return-level estimates |
+| `alea_return_level_ci` | Bootstrap confidence intervals for return levels |
+| `alea_gof` | Goodness-of-fit statistics and information criteria |
+| `alea_diagnostics` | Sample diagnostics |
+| `alea_selection` | AI-assisted distribution-selection support |
+| `alea_batch` | Batch analysis for multiple stations or sites |
+
+# Single-site workflow
+
+```{r single-site, eval = FALSE}
+library(ALEA)
+
+x <- c(
+  42.1, 38.5, 51.3, 47.0, 62.4,
+  55.2, 49.8, 58.1, 60.3, 45.7
+)
+
+fit <- alea_fit(
+  x,
+  distribution = "gev",
+  method = "lmom"
+)
+
+fit
+coef(fit)
+```
+
+# Return levels
+
+```{r return-levels, eval = FALSE}
+rl <- alea_return_level(
+  fit,
+  return_period = c(10, 25, 50, 100)
+)
+
+rl
+plot(rl)
+```
+
+# Bootstrap confidence intervals
+
+```{r confidence-intervals, eval = FALSE}
+ci <- confint(
+  fit,
+  parm = "return_level",
+  return_period = c(10, 25, 50, 100),
+  level = 0.95,
+  method = "bootstrap",
+  n_boot = 500,
+  seed = 123
+)
+
+ci
+plot(ci)
+```
+
+The initial implementation provides percentile bootstrap confidence intervals
+for return levels. Parameter confidence intervals, asymptotic return-level
+intervals, and generic delta-method intervals are not implemented in the
+initial release.
+
+# Goodness-of-fit and diagnostics
+
+```{r gof-diagnostics, eval = FALSE}
+gof <- alea_gof(fit)
+gof
+plot(gof, type = "statistic")
+
+diagnostics <- alea_diagnostics(fit)
+diagnostics
+plot(diagnostics, type = "status")
+```
+
+Goodness-of-fit results report empirical distribution function statistics and
+information criteria. Calibrated goodness-of-fit p-values and chi-square
+goodness-of-fit tests are deferred.
+
+Diagnostics are sample-level checks intended to flag possible data-quality
+issues or assumption concerns. Diagnostic warnings do not automatically
+invalidate a fitted model.
+
+# AI-assisted distribution selection
+
+```{r ai-selection, eval = FALSE}
+selection <- alea_select(x)
+
+selection
+as.data.frame(selection)
+plot(selection)
+```
+
+ALEA-R includes AI-assisted distribution-selection support through the bundled
+FADS_AI lightweight operational application model.
+
+FADS_AI output should be interpreted as model-based decision-support evidence
+for candidate distribution families. It is not proof of the true generating
+distribution and should not replace goodness-of-fit assessment, diagnostics,
+return-level uncertainty evaluation, or hydrological judgement.
+
+# Batch analysis
+
+```{r batch-analysis, eval = FALSE}
+batch <- alea_batch_fit(
+  data = annual_maxima,
+  station = "station",
+  time = "year",
+  value = "value",
+  distributions = c("gev", "gpa", "pe3", "ln2", "ln3", "gum"),
+  methods = c("lmom"),
+  return_period = c(10, 25, 50, 100),
+  gof = TRUE,
+  diagnostics = TRUE,
+  select = "ai"
+)
+
+alea_results(batch, "stations")
+alea_results(batch, "fits")
+alea_results(batch, "selected_models")
+alea_results(batch, "return_levels")
+alea_results(batch, "gof")
+alea_results(batch, "diagnostics")
+alea_results(batch, "errors")
+```
+
+Batch workflows use structured error capture. A failure for one station,
+distribution, method, return-level calculation, goodness-of-fit calculation,
+diagnostic calculation, or selection step does not stop the full workflow.
+
+# Plotting and export
+
+All plot methods return `ggplot` objects.
+
+```{r plotting-export, eval = FALSE}
+p <- plot(fit, type = "return_level")
+
+alea_save_plot(
+  p,
+  filename = "return_level_plot.png",
+  width = 7,
+  height = 5,
+  dpi = 300
+)
+```
+
+ALEA-R can also export data frames and flat batch result tables:
+
+```{r export, eval = FALSE}
+alea_export(rl, path = "return_levels.csv")
+alea_export(batch, path = "batch_results", type = "all")
+```
+
+# Current limitations
+
+The initial implementation does not include:
+
+- LP3;
+- Portuguese API aliases;
+- calibrated goodness-of-fit p-values;
+- chi-square goodness-of-fit tests;
+- parameter confidence intervals;
+- asymptotic or delta-method return-level confidence intervals;
+- HidroWeb data access in the core package.
