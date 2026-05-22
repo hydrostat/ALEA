@@ -1,4 +1,3 @@
-cat > .gitattributes <<'EOF'
 * text=auto
 
 *.R text eol=lf
@@ -12,7 +11,8 @@ cat > .gitattributes <<'EOF'
 *.txt text eol=lf
 *.json text eol=lf
 *.Rbuildignore text eol=lf
-*.gitignore text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
 DESCRIPTION text eol=lf
 NAMESPACE text eol=lf
 LICENSE text eol=lf
@@ -28,4 +28,3 @@ LICENSE.md text eol=lf
 *.pdf binary
 *.zip binary
 *.tar.gz binary
-EOF
