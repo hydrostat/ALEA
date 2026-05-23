@@ -1,0 +1,14 @@
+"case_id","check","observed","expected","passed"
+"P13-AI-LIGHT-001","model_file_exists","TRUE","TRUE",TRUE
+"P13-AI-LIGHT-001","validation_file_exists","TRUE","TRUE",TRUE
+"P13-AI-LIGHT-001","model_version","1.0.0-light","1.0.0-light",TRUE
+"P13-AI-LIGHT-001","parent_model_version","1.0.0","1.0.0",TRUE
+"P13-AI-LIGHT-001","scenario","classical","classical",TRUE
+"P13-AI-LIGHT-001","algorithm","xgb","xgb",TRUE
+"P13-AI-LIGHT-001","candidate_distributions","gev,gpa,pe3,ln2,ln3,gum","gev,gpa,pe3,ln2,ln3,gum",TRUE
+"P13-AI-LIGHT-001","feature_columns","lmom_l1,lmom_l2,lmom_l3,lmom_l4,lmom_t3,lmom_t4","lmom_l1,lmom_l2,lmom_l3,lmom_l4,lmom_t3,lmom_t4",TRUE
+"P13-AI-LIGHT-001","n_validation_rows","1000","1000",TRUE
+"P13-AI-LIGHT-001","max_abs_probability_difference","0","0",TRUE
+"P13-AI-LIGHT-001","class_agreement","1","1",TRUE
+"P13-AI-LIGHT-001","alea_select_output","TRUE","TRUE",TRUE
+"P13-AI-LIGHT-001","ranking_probability_sum","0.999999972293153","1",TRUE

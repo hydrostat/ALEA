@@ -1,0 +1,7 @@
+"case_id","distribution","method","return_period","probability_alea","probability_reference","return_level_alea","return_level_reference","absolute_difference","tolerance","passed"
+"P13-GUM-THEORY-001","gum","lmom",2,0.5,0.5,54.5103746485926,54.5103746485926,0,1e-10,TRUE
+"P13-GUM-THEORY-001","gum","lmom",5,0.8,0.8,62.1738198384519,62.173819838452,7.105427357601e-15,1e-10,TRUE
+"P13-GUM-THEORY-001","gum","lmom",10,0.9,0.9,67.2476873725072,67.2476873725072,0,1e-10,TRUE
+"P13-GUM-THEORY-001","gum","lmom",25,0.96,0.96,73.6585324523481,73.6585324523481,0,1e-10,TRUE
+"P13-GUM-THEORY-001","gum","lmom",50,0.98,0.98,78.4144635569303,78.4144635569303,0,1e-10,TRUE
+"P13-GUM-THEORY-001","gum","lmom",100,0.99,0.99,83.1352776127788,83.1352776127788,2.8421709430404e-14,1e-10,TRUE

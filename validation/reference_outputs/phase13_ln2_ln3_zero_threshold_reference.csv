@@ -1,0 +1,7 @@
+"case_id","distribution","method","return_period","probability_alea","probability_reference","zeta_reference","return_level_alea","return_level_reference","absolute_difference","tolerance","passed"
+"P13-LN2-LN3-001","ln2","lmom",2,0.5,0.5,0,55.3193299572852,55.3193299572852,0,1e-10,TRUE
+"P13-LN2-LN3-001","ln2","lmom",5,0.8,0.8,0,62.698638106648,62.698638106648,0,1e-10,TRUE
+"P13-LN2-LN3-001","ln2","lmom",10,0.9,0.9,0,66.9397556077078,66.9397556077078,0,1e-10,TRUE
+"P13-LN2-LN3-001","ln2","lmom",25,0.96,0.96,0,71.7789596603999,71.7789596603999,0,1e-10,TRUE
+"P13-LN2-LN3-001","ln2","lmom",50,0.98,0.98,0,75.0895509890389,75.0895509890389,0,1e-10,TRUE
+"P13-LN2-LN3-001","ln2","lmom",100,0.99,0.99,0,78.197602444272,78.197602444272,0,1e-10,TRUE

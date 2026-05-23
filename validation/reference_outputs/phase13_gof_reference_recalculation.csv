@@ -1,0 +1,7 @@
+"case_id","distribution","method","statistic","estimate","reference_estimate","absolute_difference","tolerance","passed","n","n_parameters","higher_is_better","description"
+"P13-GOF-REF-001","gum","lmom","ks",0.153042352833179,0.153042352833179,0,1e-10,TRUE,20,2,FALSE,"Kolmogorov-Smirnov statistic"
+"P13-GOF-REF-001","gum","lmom","cvm",0.0907070536083543,0.0907070536083543,0,1e-10,TRUE,20,2,FALSE,"Cramer-von Mises statistic"
+"P13-GOF-REF-001","gum","lmom","ad",0.687624633878336,0.687624633878336,0,1e-10,TRUE,20,2,FALSE,"Anderson-Darling statistic"
+"P13-GOF-REF-001","gum","lmom","loglik",-72.3933265340198,-72.3933265340198,0,1e-10,TRUE,20,2,TRUE,"Log-likelihood"
+"P13-GOF-REF-001","gum","lmom","aic",148.78665306804,148.78665306804,0,1e-10,TRUE,20,2,FALSE,"Akaike information criterion"
+"P13-GOF-REF-001","gum","lmom","bic",150.778117615148,150.778117615148,0,1e-10,TRUE,20,2,FALSE,"Bayesian information criterion"
