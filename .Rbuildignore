@@ -20,3 +20,4 @@
 ^Meta$
 ^Meta/.*$
 ^cran-comments\.md$
+^LICENSE\.md$
