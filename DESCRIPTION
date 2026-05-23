@@ -14,6 +14,8 @@ Description: Provides tools for hydrological frequency analysis, including
     bootstrap confidence intervals, goodness-of-fit assessment, sample
     diagnostics, AI-assisted distribution-selection support, batch workflows,
     publication-ready plots, and export helpers.
+Depends:
+    R (>= 3.5.0)
 License: MIT + file LICENSE
 URL: https://github.com/hydrostat/ALEA
 BugReports: https://github.com/hydrostat/ALEA/issues

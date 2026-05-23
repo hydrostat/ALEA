@@ -7,3 +7,5 @@
 Thumbs.db
 /doc/
 /Meta/
+examples/output/
+examples/output/*
