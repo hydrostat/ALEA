@@ -17,7 +17,30 @@ You can install the development version from GitHub with:
 
 ``` r
 # install.packages("remotes")
-remotes::install_github("hydrostat/ALEA")
+remotes::install_github(
+  "hydrostat/ALEA",
+  dependencies = TRUE,
+  upgrade = "never"
+)
+```
+
+If you also want the installed vignettes to be available through
+`utils::browseVignettes("ALEA")`, install with `build_vignettes = TRUE`:
+
+``` r
+# install.packages("remotes")
+remotes::install_github(
+  "hydrostat/ALEA",
+  dependencies = TRUE,
+  upgrade = "never",
+  build_vignettes = TRUE
+)
+```
+
+After installation, load the package with:
+
+``` r
+library(ALEA)
 ```
 
 ## Main features
@@ -198,6 +221,53 @@ alea_export(rl, path = "return_levels.csv")
 alea_export(batch, path = "batch_results", type = "all")
 ```
 
+## Learning examples
+
+Teaching-oriented ALEA-R workflow scripts are available in the
+`examples/` folder.
+
+These examples use public Paraopeba hydrological data and demonstrate
+common frequency-analysis workflows:
+
+- single-site frequency analysis;
+- comparison of candidate distributions;
+- return levels and bootstrap confidence intervals;
+- goodness-of-fit, diagnostics, and AI-assisted selection;
+- small batch analysis;
+- plots and exports.
+
+Run the examples from the package root directory. For example:
+
+``` r
+source("examples/01_single_site_basic_workflow.R")
+```
+
+The example data files are stored in:
+
+``` text
+examples/data/
+```
+
+Generated teaching outputs, such as exported plots and CSV files, are
+written to:
+
+``` text
+examples/output/
+```
+
+The examples are designed for learning and classroom use. They use only
+the public ALEA-R API and the distributions supported in the current
+release: `gev`, `gpa`, `pe3`, `ln2`, `ln3`, and `gum`.
+
+Installed vignettes can be listed with:
+
+``` r
+utils::browseVignettes("ALEA")
+```
+
+When installing from GitHub, use `build_vignettes = TRUE` if you want
+these vignettes to be installed locally.
+
 ## Current limitations
 
 The initial implementation does not include:
@@ -212,7 +282,8 @@ The initial implementation does not include:
 
 ## Citation
 
-A formal package citation will be added before the first public release.
+Please cite ALEA-R in reports and publications where it supports the
+analysis.
 
 ``` r
 citation("ALEA")
