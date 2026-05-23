@@ -22,9 +22,29 @@ return-level estimation, bootstrap confidence intervals, goodness-of-fit
 assessment, sample diagnostics, AI-assisted distribution-selection support,
 batch analysis, publication-ready plots, and export helpers.
 
+## Project status
+
+ALEA-R is available as a public GitHub release for applied hydrological
+frequency-analysis workflows, teaching, validation, and reproducible examples.
+
+The package currently passes GitHub Actions R CMD check and local CRAN-oriented
+checks with 0 errors and 0 warnings. The latest local CRAN-oriented check
+produced 3 explainable notes: new submission, installed package size due to the
+bundled FADS_AI light model, and local inability to verify current time.
+
+CRAN submission is intentionally deferred while the package is used more
+broadly through GitHub.
+
+The public API is intentionally limited to the initial supported distribution
+families: GEV, GPA, PE3, LN2, LN3, and GUM. LP3 is not included in the current
+implementation.
+
+FADS_AI output should be interpreted as model-based decision-support evidence,
+not as proof of the true generating distribution.
+
 ## Installation
 
-You can install the development version from GitHub with:
+You can install the public GitHub release with:
 
 ```{r installation, eval = FALSE}
 # install.packages("remotes")

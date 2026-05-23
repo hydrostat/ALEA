@@ -1,5 +1,54 @@
 # ALEA NEWS
 
+# ALEA 0.1.1
+
+Public GitHub release of ALEA-R for applied hydrological frequency-analysis
+workflows, teaching, validation, and reproducible examples.
+
+This release consolidates post-0.1.0 stabilization, external validation cases,
+user-facing teaching examples, and CRAN-readiness cleanup after the first
+development pre-release.
+
+## Highlights
+
+- Added external validation cases for theoretical, numerical, FADS_AI,
+  goodness-of-fit, and batch-analysis workflows.
+- Added user-facing teaching examples using public Paraopeba hydrological data.
+- Added README guidance for sourceable learning examples.
+- Added explicit `R (>= 3.5.0)` package metadata.
+- Improved CRAN-oriented source-package cleanup through `.Rbuildignore`.
+- Added `cran-comments.md` and a Phase 15 CRAN-readiness report.
+- Confirmed that `xgboost` remains a justified hard dependency for the default
+  offline `alea_select(x)` workflow.
+- Confirmed local CRAN-oriented check status: 0 errors, 0 warnings, and 3
+  explainable notes.
+- Confirmed GitHub Actions R CMD check passes.
+
+## Scope
+
+This release does not change the public API or package scope.
+
+Supported distributions remain:
+
+- `gev`
+- `gpa`
+- `pe3`
+- `ln2`
+- `ln3`
+- `gum`
+
+LP3 remains outside the current implementation scope.
+
+FADS_AI output remains decision-support evidence. It should be interpreted
+together with goodness-of-fit results, diagnostics, L-moment behavior, quantile
+uncertainty, and hydrological judgement. It should not be interpreted as proof
+of the true generating distribution.
+
+## CRAN status
+
+ALEA-R is technically close to CRAN-ready, but CRAN submission is intentionally
+deferred while the package is used more broadly through GitHub.
+
 # ALEA 0.1.0
 
 Planned first public development release of ALEA-R, an R package for
