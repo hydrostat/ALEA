@@ -1,28 +1,30 @@
-# Return-level confidence intervals.
+# Quantile confidence intervals.
 
 
 #' Confidence intervals for ALEA fitted models
 #'
-#' Computes confidence intervals for ALEA fitted models.
+#' Computes percentile bootstrap confidence intervals for quantiles from ALEA
+#' fitted models.
 #'
-#' @param object An object returned by `alea_fit`.
-#' @param parm Parameter or derived quantity. Currently only `"return_level"`
-#'   is supported.
+#' @param object An object returned by `alea_fit()` or `alea_compare()`.
+#' @param parm Character scalar. Use `"quantile"`.
 #' @param level Confidence level. Must be a single number between 0 and 1.
 #' @param return_period Numeric vector of return periods. Values must be finite
 #'   and greater than 1.
-#' @param method Confidence interval method. Currently only `"bootstrap"` is
-#'   implemented.
+#' @param method Character scalar. Use `"bootstrap"`.
 #' @param n_boot Number of bootstrap resamples.
 #' @param seed Optional integer seed for reproducibility. If `NULL`, the current
 #'   random-number state is used.
-#' @param ... Additional arguments reserved for future methods.
+#' @param ... Additional arguments passed to methods. Not used by the current
+#'   methods.
 #'
-#' @return A data frame with class `alea_return_level_ci`.
+#' @return A data frame with class `alea_quantile_ci`. The table includes
+#'   fitted quantiles, confidence limits, bootstrap counts, and standardized
+#'   parameter columns.
 #'
 #' @export
 confint.alea_fit <- function(object,
-                             parm = "return_level",
+                             parm = "quantile",
                              level = 0.95,
                              return_period,
                              method = "bootstrap",
@@ -31,13 +33,13 @@ confint.alea_fit <- function(object,
                              ...) {
   validate_alea_fit(object)
   
-  if (!identical(parm, "return_level")) {
-    stop("Only parm = 'return_level' is currently supported.", call. = FALSE)
+  if (!identical(parm, "quantile")) {
+    stop("Only parm = 'quantile' is currently supported.", call. = FALSE)
   }
   
   method <- match.arg(method, choices = "bootstrap")
   
-  ci_bootstrap_return_level(
+  ci_bootstrap_quantile(
     object = object,
     return_period = return_period,
     level = level,
@@ -48,7 +50,7 @@ confint.alea_fit <- function(object,
 }
 
 
-ci_bootstrap_return_level <- function(object,
+ci_bootstrap_quantile <- function(object,
                                       return_period,
                                       level = 0.95,
                                       n_boot = 500,
@@ -65,7 +67,7 @@ ci_bootstrap_return_level <- function(object,
   distribution <- object$distribution
   method <- object$method
   
-  point <- alea_return_level(object, return_period = return_period)
+  point <- alea_quantile(object, return_period = return_period)
   
   if (!is.null(seed)) {
     if (!is.numeric(seed) || length(seed) != 1L || is.na(seed) || !is.finite(seed)) {
@@ -117,7 +119,7 @@ ci_bootstrap_return_level <- function(object,
     }
     
     rl_b <- tryCatch(
-      alea_return_level(fit_b, return_period = return_period),
+      alea_quantile(fit_b, return_period = return_period),
       error = function(e) e
     )
     
@@ -126,7 +128,7 @@ ci_bootstrap_return_level <- function(object,
       next
     }
     
-    boot_matrix[i, ] <- rl_b$return_level
+    boot_matrix[i, ] <- rl_b$quantile
   }
   
   n_success <- colSums(is.finite(boot_matrix))
@@ -161,7 +163,7 @@ ci_bootstrap_return_level <- function(object,
     method = point$method,
     return_period = point$return_period,
     probability = point$probability,
-    return_level = point$return_level,
+    quantile = point$quantile,
     conf_level = rep(level, nrow(point)),
     conf_method = rep("bootstrap", nrow(point)),
     lower = as.numeric(lower),
@@ -174,7 +176,7 @@ ci_bootstrap_return_level <- function(object,
   
   param_cols <- setdiff(
     names(point),
-    c("distribution", "method", "return_period", "probability", "return_level")
+    c("distribution", "method", "return_period", "probability", "quantile")
   )
   
   if (length(param_cols) > 0L) {
@@ -193,27 +195,83 @@ ci_bootstrap_return_level <- function(object,
     )
   }
   
+  attr(out, "data") <- object$data
+  attr(out, "observed_data") <- object$data
   attr(out, "bootstrap_failures") <- failed
-  class(out) <- c("alea_return_level_ci", "data.frame")
+  class(out) <- c("alea_quantile_ci", "data.frame")
   out
 }
 
 
 #' @export
-print.alea_return_level_ci <- function(x, ...) {
-  cat("ALEA return-level confidence intervals\n")
-  cat("Method:", unique(x$conf_method), "\n")
-  cat("Confidence level:", unique(x$conf_level), "\n")
-  cat("Distribution:", unique(x$distribution), "\n")
-  cat("Estimation method:", unique(x$method), "\n\n")
-  
-  print.data.frame(x, row.names = FALSE, ...)
+print.alea_quantile_ci <- function(x, digits = 4, max_rows = 20, ...) {
+  df <- as.data.frame(x)
+
+  cat("ALEA quantile confidence intervals\n")
+
+  distributions <- unique(df$distribution)
+  methods <- unique(df$method)
+  conf_methods <- unique(df$conf_method)
+  conf_levels <- unique(df$conf_level)
+  model_keys <- unique(paste(df$distribution, df$method, sep = "|"))
+  n_models <- length(model_keys)
+
+  conf_method_label <- paste(conf_methods, collapse = ", ")
+  conf_level_label <- paste(round(conf_levels, digits = digits), collapse = ", ")
+
+  if (n_models == 1L) {
+    cat("Distribution:", distributions, "\n")
+    cat("Method:", methods, "\n")
+    cat("Confidence method:", conf_method_label, "\n")
+    cat("Confidence level:", conf_level_label, "\n")
+
+    n_success <- unique(df$n_success)
+    n_failed <- unique(df$n_failed)
+    if (length(n_success) == 1L && length(n_failed) == 1L) {
+      cat(
+        "Bootstrap replicates:",
+        n_success,
+        "successful,",
+        n_failed,
+        "failed\n"
+      )
+    }
+
+    cat("\n")
+
+    out <- df[, c("return_period", "probability", "quantile", "lower", "upper"), drop = FALSE]
+    out <- round_numeric_columns_internal(out, digits = digits)
+    print.data.frame(out, row.names = FALSE, ...)
+
+    parameter_cols <- intersect(c("location", "scale", "shape"), names(df))
+    if (length(parameter_cols) > 0L) {
+      parameters <- unique(df[parameter_cols])
+      parameters <- round_numeric_columns_internal(parameters, digits = digits)
+      cat("\nParameters:\n")
+      print.data.frame(parameters, row.names = FALSE, ...)
+    }
+  } else {
+    cat("Distributions:", paste(distributions, collapse = ", "), "\n")
+    cat("Methods:", paste(methods, collapse = ", "), "\n")
+    cat("Confidence method:", conf_method_label, "\n")
+    cat("Confidence level:", conf_level_label, "\n")
+    cat("Models:", n_models, "\n")
+    cat("Rows:", nrow(df), "\n\n")
+
+    out <- df[, c("distribution", "method", "return_period", "quantile", "lower", "upper"), drop = FALSE]
+    out <- round_numeric_columns_internal(out, digits = digits)
+    out <- compact_print_rows_internal(out, max_rows = max_rows)
+    print.data.frame(out, row.names = FALSE, ...)
+  }
+
+  cat("\nUse as.data.frame(x) for the full confidence-interval table.\n")
+
   invisible(x)
 }
 
 
 #' @export
-as.data.frame.alea_return_level_ci <- function(x, ...) {
+as.data.frame.alea_quantile_ci <- function(x, ...) {
   class(x) <- "data.frame"
   x
 }

@@ -22,7 +22,7 @@ The following constraints remained unchanged during Phase 15:
 - supported distributions remain `gev`, `gpa`, `pe3`, `ln2`, `ln3`, and `gum`;
 - LP3 remains excluded;
 - user-facing objects use S3 classes;
-- bootstrap remains the only implemented return-level confidence interval method;
+- bootstrap remains the only implemented quantile confidence interval method;
 - calibrated GOF p-values and chi-square GOF tests remain deferred;
 - FADS_AI output is decision-support evidence, not proof of the true generating distribution;
 - HidroWeb access remains future optional scope and is not part of the core release.

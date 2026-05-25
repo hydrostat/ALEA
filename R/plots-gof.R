@@ -6,11 +6,21 @@
 #'
 #' @param x An object of class `alea_gof`.
 #' @param type Character scalar. Plot type. One of `"statistic"` or `"rank"`.
-#' @param ... Additional arguments passed to methods. Currently unused.
+#' @param ... Additional arguments passed to methods.
 #'
 #' @return A `ggplot` object.
 #'
 #' @method plot alea_gof
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9)
+#' fit <- alea_fit(x, distribution = "gev", method = "lmom")
+#' gof <- alea_gof(fit)
+#' plot(gof, type = "statistic")
+#'
+#' cmp <- alea_compare(x, distributions = c("gev", "gum"), methods = "lmom")
+#' plot(alea_gof(cmp), type = "rank")
+#'
 #' @export
 plot.alea_gof <- function(
     x,

@@ -6,10 +6,11 @@
 \usage{
 \method{plot}{alea_fit}(
   x,
-  type = c("density", "cdf", "qq", "pp", "return_level"),
+  type = c("density", "cdf", "qq", "pp", "quantile"),
   return_period = NULL,
   return_period_scale = c("gumbel", "log", "linear"),
   return_period_grid_n = 200,
+  plot_observed = TRUE,
   plotting_position_a = 0.44,
   n_grid = 200,
   bins = 30,
@@ -20,31 +21,45 @@
 \item{x}{An object of class \code{alea_fit}.}
 
 \item{type}{Character scalar. Plot type. One of \code{"density"}, \code{"cdf"},
-\code{"qq"}, \code{"pp"}, or \code{"return_level"}.}
+\code{"qq"}, \code{"pp"}, or \code{"quantile"}.}
 
 \item{return_period}{Numeric vector, \code{NULL}, or \code{NA}. Return periods used as
-x-axis ticks when \code{type = "return_level"}. If \code{NULL} or \code{NA}, ticks are
+x-axis ticks when \code{type = "quantile"}. If \code{NULL} or \code{NA}, ticks are
 chosen automatically from standard hydrological return periods.}
 
 \item{return_period_scale}{Character scalar. Return-period axis scale when
-\code{type = "return_level"}. One of \code{"gumbel"}, \code{"log"}, or \code{"linear"}.}
+\code{type = "quantile"}. One of \code{"gumbel"}, \code{"log"}, or \code{"linear"}.}
 
 \item{return_period_grid_n}{Integer scalar. Number of internal grid points
-used to draw a smooth fitted return-level curve.}
+used to draw a smooth fitted quantile curve.}
 
-\item{plotting_position_a}{Numeric scalar. Plotting-position parameter
-passed to \code{stats::ppoints()} for observed return-level points.}
+\item{plot_observed}{Logical scalar. If \code{TRUE}, observed plotting-position
+points are added to quantile plots.}
+
+\item{plotting_position_a}{Numeric scalar. Plotting-position parameter \code{a}
+used for observed quantile points, with plotting positions
+\code{p_i = (i - a) / (n + 1 - 2 * a)} and empirical return periods
+\code{T_i = 1 / (1 - p_i)}.}
 
 \item{n_grid}{Integer scalar. Number of grid points for fitted density and
 CDF curves.}
 
 \item{bins}{Integer scalar. Number of histogram bins for \code{type = "density"}.}
 
-\item{...}{Additional arguments passed to methods. Currently unused.}
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A \code{ggplot} object.
 }
 \description{
 Produces diagnostic and fitted-distribution plots from an \code{alea_fit} object.
+}
+\examples{
+x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+       60.3, 45.9)
+fit <- alea_fit(x, distribution = "gev", method = "lmom")
+plot(fit, type = "density")
+plot(fit, type = "quantile")
+plot(fit, type = "quantile", plot_observed = FALSE)
+
 }

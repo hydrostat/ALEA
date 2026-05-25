@@ -98,7 +98,7 @@ fit_gum_mle <- function(x, ...) {
   make_mle_fit_result_internal(para, "gum", opt)
 }
 
-return_level_gum_internal <- function(return_period, para, ...) {
+quantile_gum_internal <- function(return_period, para, ...) {
   check_return_period(return_period)
   q_gum_internal(1 - 1 / return_period, para)
 }

@@ -1,4 +1,4 @@
-test_that("Phase 13 lmom reference return levels match ALEA-R outputs", {
+test_that("Phase 13 lmom reference quantiles match ALEA-R outputs", {
   skip_if_not_installed("lmom")
   
   x <- c(
@@ -18,7 +18,7 @@ test_that("Phase 13 lmom reference return levels match ALEA-R outputs", {
       method = "lmom"
     )
     
-    rl <- alea_return_level(
+    rl <- alea_quantile(
       fit,
       return_period = return_period
     )
@@ -28,7 +28,7 @@ test_that("Phase 13 lmom reference return levels match ALEA-R outputs", {
     reference <- qua_fun(probability, para)
     
     expect_s3_class(fit, "alea_fit")
-    expect_s3_class(rl, "alea_return_level")
+    expect_s3_class(rl, "alea_quantile")
     
     expect_identical(
       as.character(rl$distribution),
@@ -48,14 +48,14 @@ test_that("Phase 13 lmom reference return levels match ALEA-R outputs", {
     )
     
     expect_equal(
-      rl$return_level,
+      rl$quantile,
       reference,
       tolerance = 1e-8,
       ignore_attr = TRUE
     )
     
-    expect_true(all(is.finite(rl$return_level)))
-    expect_true(all(diff(rl$return_level) > 0))
+    expect_true(all(is.finite(rl$quantile)))
+    expect_true(all(diff(rl$quantile) > 0))
   }
   
   compare_lmom_reference(

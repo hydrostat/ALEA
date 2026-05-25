@@ -224,7 +224,7 @@ test_that("alea_save_plots saves a named list of ggplot objects", {
   
   plots <- list(
     density = make_export_test_plot(),
-    return_level = make_export_test_plot()
+    quantile = make_export_test_plot()
   )
   
   directory <- tempfile()
@@ -239,7 +239,7 @@ test_that("alea_save_plots saves a named list of ggplot objects", {
     dpi = 72
   )
   
-  expected_files <- file.path(directory, c("density.png", "return_level.png"))
+  expected_files <- file.path(directory, c("density.png", "quantile.png"))
   
   expect_true(all(file.exists(expected_files)))
   expect_true(all(file.info(expected_files)$size > 0))
@@ -247,7 +247,7 @@ test_that("alea_save_plots saves a named list of ggplot objects", {
     unname(result),
     normalizePath(expected_files, winslash = "/", mustWork = FALSE)
   )
-  expect_identical(names(result), c("density", "return_level"))
+  expect_identical(names(result), c("density", "quantile"))
 })
 
 
@@ -505,7 +505,7 @@ test_that("alea_save_plots makes safe filenames from plot names", {
   
   plots <- list(
     "Density plot" = make_export_test_plot(),
-    "Return/level plot!" = make_export_test_plot()
+    "Quantile plot!" = make_export_test_plot()
   )
   
   directory <- tempfile()
@@ -520,7 +520,7 @@ test_that("alea_save_plots makes safe filenames from plot names", {
     dpi = 72
   )
   
-  expected_names <- c("Density_plot", "Return_level_plot")
+  expected_names <- c("Density_plot", "Quantile_plot")
   expected_files <- file.path(directory, paste0(expected_names, ".png"))
   
   expect_true(all(file.exists(expected_files)))
@@ -718,7 +718,7 @@ test_that("alea_export saves all non-empty alea_batch tables", {
   expect_true(all(file.exists(unname(result))))
   expect_true("stations" %in% names(result))
   expect_true("fits" %in% names(result))
-  expect_true("return_levels" %in% names(result))
+  expect_true("quantiles" %in% names(result))
   expect_true("gof" %in% names(result))
   expect_true("diagnostics" %in% names(result))
 })
@@ -934,7 +934,7 @@ test_that("alea_export reports when no non-empty batch tables are available", {
   batch <- list(
     stations = data.frame(),
     fits = data.frame(),
-    return_levels = data.frame(),
+    quantiles = data.frame(),
     gof = data.frame(),
     diagnostics = data.frame(),
     selection = data.frame(),

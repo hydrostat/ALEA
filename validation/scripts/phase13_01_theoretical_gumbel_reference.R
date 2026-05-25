@@ -2,10 +2,10 @@
 ## 2. `validation/scripts/phase13_01_theoretical_gumbel_reference.R`
 
 
-# Phase 13 — Theoretical Gumbel return-level validation
+# Phase 13 — Theoretical Gumbel quantile validation
 #
 # Purpose:
-# Validate ALEA-R Gumbel return-level calculations against the
+# Validate ALEA-R Gumbel quantile calculations against the
 # closed-form Gumbel quantile formula.
 #
 # This script is a validation artifact, not a user-facing package feature.
@@ -27,7 +27,7 @@ output_file <- file.path(output_dir, "phase13_gumbel_reference.csv")
 # Deterministic synthetic annual-maximum-like sample.
 #
 # The sample is intentionally simple and small enough for validation review.
-# The fitted parameters are obtained through ALEA-R, then return levels are
+# The fitted parameters are obtained through ALEA-R, then quantiles are
 # checked against the closed-form Gumbel quantile formula using those same
 # fitted parameters.
 
@@ -50,7 +50,7 @@ fit <- alea_fit(
   method = "lmom"
 )
 
-rl <- alea_return_level(
+rl <- alea_quantile(
   fit,
   return_period = return_period
 )
@@ -76,7 +76,7 @@ alpha <- unname(params[["alpha"]])
 
 probability_reference <- 1 - 1 / return_period
 
-return_level_reference <- xi - alpha * log(-log(probability_reference))
+quantile_reference <- xi - alpha * log(-log(probability_reference))
 
 comparison <- data.frame(
   case_id = "P13-GUM-THEORY-001",
@@ -85,17 +85,17 @@ comparison <- data.frame(
   return_period = return_period,
   probability_alea = rl$probability,
   probability_reference = probability_reference,
-  return_level_alea = rl$return_level,
-  return_level_reference = return_level_reference,
-  absolute_difference = abs(rl$return_level - return_level_reference),
+  quantile_alea = rl$quantile,
+  quantile_reference = quantile_reference,
+  absolute_difference = abs(rl$quantile - quantile_reference),
   tolerance = tolerance,
-  passed = abs(rl$return_level - return_level_reference) <= tolerance
+  passed = abs(rl$quantile - quantile_reference) <= tolerance
 )
 
 # ---- Validation checks -------------------------------------------------------
 
 stopifnot(inherits(fit, "alea_fit"))
-stopifnot(inherits(rl, "alea_return_level"))
+stopifnot(inherits(rl, "alea_quantile"))
 
 stopifnot(identical(as.character(rl$distribution), rep("gum", length(return_period))))
 stopifnot(identical(as.character(rl$method), rep("lmom", length(return_period))))
@@ -109,8 +109,8 @@ stopifnot(all.equal(
 
 stopifnot(all(comparison$passed))
 
-# Return levels should increase with return period for this fitted Gumbel model.
-stopifnot(all(diff(comparison$return_level_alea) > 0))
+# Quantiles should increase with return period for this fitted Gumbel model.
+stopifnot(all(diff(comparison$quantile_alea) > 0))
 
 # ---- Write reference output --------------------------------------------------
 

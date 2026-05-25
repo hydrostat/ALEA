@@ -6,7 +6,7 @@ test_that("plot.alea_fit returns ggplot objects for all supported plot types", {
   
   fit <- alea_fit(x, distribution = "gum", method = "lmom")
   
-  plot_types <- c("density", "cdf", "qq", "pp", "return_level")
+  plot_types <- c("density", "cdf", "qq", "pp", "quantile")
   
   for (plot_type in plot_types) {
     p <- plot(fit, type = plot_type)
@@ -73,7 +73,7 @@ test_that("plot.alea_fit validates plot type and plotting arguments", {
   )
   
   expect_error(
-    plot(fit, type = "return_level", return_period = c(1, 10)),
+    plot(fit, type = "quantile", return_period = c(1, 10)),
     "greater than 1"
   )
 })
@@ -101,17 +101,17 @@ test_that("plot.alea_fit rejects non-plottable fitted data", {
   )
 })
 
-test_that("plot.alea_fit return-level plot supports automatic ticks and scales", {
+test_that("plot.alea_fit quantile plot supports automatic ticks and scales", {
   skip_if_not_installed("ggplot2")
   
   set.seed(123)
   x <- stats::rnorm(60, mean = 100, sd = 15)
   fit <- alea_fit(x, distribution = "gum", method = "lmom")
   
-  p_default <- plot(fit, type = "return_level")
-  p_na <- plot(fit, type = "return_level", return_period = NA_real_)
-  p_log <- plot(fit, type = "return_level", return_period_scale = "log")
-  p_linear <- plot(fit, type = "return_level", return_period_scale = "linear")
+  p_default <- plot(fit, type = "quantile")
+  p_na <- plot(fit, type = "quantile", return_period = NA_real_)
+  p_log <- plot(fit, type = "quantile", return_period_scale = "log")
+  p_linear <- plot(fit, type = "quantile", return_period_scale = "linear")
   
   expect_s3_class(p_default, "ggplot")
   expect_s3_class(p_na, "ggplot")
@@ -122,7 +122,7 @@ test_that("plot.alea_fit return-level plot supports automatic ticks and scales",
 })
 
 
-test_that("plot.alea_fit return-level plot validates return-period plotting arguments", {
+test_that("plot.alea_fit quantile plot validates return-period plotting arguments", {
   skip_if_not_installed("ggplot2")
   
   set.seed(123)
@@ -130,22 +130,22 @@ test_that("plot.alea_fit return-level plot validates return-period plotting argu
   fit <- alea_fit(x, distribution = "gum", method = "lmom")
   
   expect_error(
-    plot(fit, type = "return_level", return_period_scale = "unsupported"),
+    plot(fit, type = "quantile", return_period_scale = "unsupported"),
     "should be one of"
   )
   
   expect_error(
-    plot(fit, type = "return_level", return_period_grid_n = 10),
+    plot(fit, type = "quantile", return_period_grid_n = 10),
     "`return_period_grid_n` must be at least 20"
   )
   
   expect_error(
-    plot(fit, type = "return_level", plotting_position_a = -0.1),
+    plot(fit, type = "quantile", plotting_position_a = -0.1),
     "`plotting_position_a` must be greater than or equal to 0 and less than 1"
   )
   
   expect_error(
-    plot(fit, type = "return_level", plotting_position_a = 1),
+    plot(fit, type = "quantile", plotting_position_a = 1),
     "`plotting_position_a` must be greater than or equal to 0 and less than 1"
   )
 })
@@ -161,10 +161,35 @@ test_that("plot.alea_fit warns when requested return periods hide observed plott
   expect_warning(
     plot(
       fit,
-      type = "return_level",
+      type = "quantile",
       return_period = c(2, 5),
       return_period_scale = "gumbel"
     ),
     "Some observed plotting positions"
+  )
+})
+
+has_ggplot_geom <- function(p, geom_class) {
+  any(vapply(p$layers, function(layer) inherits(layer$geom, geom_class), logical(1)))
+}
+
+test_that("plot.alea_fit quantile plot can include or omit observed points", {
+  skip_if_not_installed("ggplot2")
+
+  set.seed(123)
+  x <- stats::rnorm(60, mean = 100, sd = 15)
+  fit <- alea_fit(x, distribution = "gum", method = "lmom")
+
+  p_observed <- plot(fit, type = "quantile", plot_observed = TRUE)
+  p_without_observed <- plot(fit, type = "quantile", plot_observed = FALSE)
+
+  expect_s3_class(p_observed, "ggplot")
+  expect_s3_class(p_without_observed, "ggplot")
+  expect_true(has_ggplot_geom(p_observed, "GeomPoint"))
+  expect_false(has_ggplot_geom(p_without_observed, "GeomPoint"))
+
+  expect_error(
+    plot(fit, type = "quantile", plot_observed = NA),
+    "`plot_observed` must be `TRUE` or `FALSE`"
   )
 })

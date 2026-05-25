@@ -6,11 +6,17 @@
 #'
 #' @param x An object of class `alea_diagnostics`.
 #' @param type Character scalar. Plot type. One of `"status"` or `"p_value"`.
-#' @param ... Additional arguments passed to methods. Currently unused.
+#' @param ... Additional arguments passed to methods.
 #'
 #' @return A `ggplot` object.
 #'
 #' @method plot alea_diagnostics
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9)
+#' diagnostics <- alea_diagnostics(x)
+#' plot(diagnostics, type = "status")
+#'
 #' @export
 plot.alea_diagnostics <- function(
     x,
@@ -192,7 +198,7 @@ plot_alea_diagnostics_p_value <- function(data) {
   ) +
     ggplot2::geom_point(
       ggplot2::aes(shape = reject, color = reject),
-      size = 1.0,
+      size = 2.5,
       alpha = 0.9,
       show.legend = TRUE
     ) +
@@ -228,7 +234,7 @@ plot_alea_diagnostics_p_value <- function(data) {
           shape = c(16, 17),
           color = unname(reject_colors),
           alpha = 0.9,
-          size = 1.5
+          size = 2.5
         )
       )
     ) +

@@ -51,7 +51,7 @@ head(annual_maxima)
 
 # Run a batch workflow
 
-The following workflow fits all six initial ALEA-R candidate distributions to each station using L-moment estimation. It also computes return levels, goodness-of-fit results, sample diagnostics, and AI-assisted distribution-selection support.
+The following workflow fits all six initial ALEA-R candidate distributions to each station using L-moment estimation. It also computes quantiles, goodness-of-fit results, sample diagnostics, and AI-assisted distribution-selection support.
 
 ```{r batch-fit}
 batch <- alea_batch_fit(
@@ -72,11 +72,12 @@ batch
 
 # Station metadata
 
-The `stations` table summarizes the samples processed by the batch workflow.
+The `stations` table summarizes the samples processed by the batch workflow. Batch result tables print compactly in the console. Use `as.data.frame()` when you need the complete table for programming, export, or reporting.
 
 ```{r stations}
 stations <- alea_results(batch, "stations")
 stations
+as.data.frame(stations)
 ```
 
 # Fit summaries
@@ -102,15 +103,16 @@ selected_models <- alea_results(batch, "selected_models")
 selected_models
 ```
 
-FADS_AI output should be interpreted as model-based decision-support evidence for candidate distribution families. It is not proof of the true generating distribution and should not replace goodness-of-fit assessment, diagnostics, return-level uncertainty evaluation, or hydrological judgement.
+FADS_AI output should be interpreted as model-based decision-support evidence for candidate distribution families. It is not proof of the true generating distribution and should not replace goodness-of-fit assessment, diagnostics, quantile uncertainty evaluation, or hydrological judgement.
 
-# Return levels
+# Quantiles
 
-When `return_period` is supplied, the batch object contains a flat return-level table for successful fitted models and requested return periods.
+When `return_period` is supplied, the batch object contains a flat quantile table for successful fitted models and requested return periods.
 
-```{r return-levels}
-return_levels <- alea_results(batch, "return_levels")
-head(return_levels)
+```{r quantiles}
+quantiles <- alea_results(batch, "quantiles")
+quantiles
+head(as.data.frame(quantiles))
 ```
 
 # Goodness-of-fit results
@@ -119,10 +121,11 @@ When `gof = TRUE`, the batch object contains goodness-of-fit statistics and info
 
 ```{r gof}
 gof <- alea_results(batch, "gof")
-head(gof)
+gof
+head(as.data.frame(gof))
 ```
 
-Goodness-of-fit results summarize distribution fit from different perspectives. They should be interpreted together with diagnostics, return-level uncertainty, graphical checks, and hydrological judgement.
+Goodness-of-fit results summarize distribution fit from different perspectives. They should be interpreted together with diagnostics, quantile uncertainty, graphical checks, and hydrological judgement.
 
 # Diagnostics
 
@@ -130,14 +133,15 @@ When `diagnostics = TRUE`, the batch object contains sample-level diagnostics fo
 
 ```{r diagnostics}
 diagnostics <- alea_results(batch, "diagnostics")
-head(diagnostics)
+diagnostics
+head(as.data.frame(diagnostics))
 ```
 
 Diagnostics are intended to flag possible data-quality issues or assumption concerns. Diagnostic warnings do not automatically invalidate a fitted model.
 
 # Structured errors
 
-Batch workflows use structured error capture. A failure for one station, distribution, method, return-level calculation, goodness-of-fit calculation, diagnostic calculation, or AI-selection step does not stop the full workflow.
+Batch workflows use structured error capture. A failure for one station, distribution, method, quantile calculation, goodness-of-fit calculation, diagnostic calculation, or AI-selection step does not stop the full workflow.
 
 Errors can be inspected with:
 
@@ -150,14 +154,14 @@ When no errors are recorded, the errors table is still returned as an empty data
 
 # Batch plots
 
-The `plot()` method for `alea_batch` objects provides summaries for selected models, return levels, goodness-of-fit results, and diagnostics.
+The `plot()` method for `alea_batch` objects provides summaries for selected models, quantiles, goodness-of-fit results, and diagnostics.
 
 ```{r plot-selected-models}
 plot(batch, type = "selected_models")
 ```
 
-```{r plot-return-levels}
-plot(batch, type = "return_levels")
+```{r plot-quantiles}
+plot(batch, type = "quantiles")
 ```
 
 ```{r plot-gof}
@@ -190,5 +194,5 @@ For each station, a practical workflow is:
 2. Check which candidate models fitted successfully.
 3. Compare GOF statistics and information criteria.
 4. Review AI-assisted distribution-selection support.
-5. Inspect return-level estimates and plots.
+5. Inspect quantile estimates and plots.
 6. Make the final modelling decision using statistical evidence and hydrological judgement.

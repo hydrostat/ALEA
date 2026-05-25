@@ -1,7 +1,7 @@
 # Phase 13 — Independent lmom reference comparisons
 #
 # Purpose:
-# Validate selected ALEA-R distribution wrappers and fitted return-level
+# Validate selected ALEA-R distribution wrappers and fitted quantile
 # calculations against direct lmom reference calculations.
 #
 # This script is a validation artifact, not a user-facing package feature.
@@ -43,7 +43,7 @@ compare_lmom_reference <- function(distribution, fit_fun, qua_fun) {
     method = "lmom"
   )
   
-  rl <- alea_return_level(
+  rl <- alea_quantile(
     fit,
     return_period = return_period
   )
@@ -60,11 +60,11 @@ compare_lmom_reference <- function(distribution, fit_fun, qua_fun) {
     return_period = return_period,
     probability_alea = rl$probability,
     probability_reference = probability,
-    return_level_alea = rl$return_level,
-    return_level_reference = reference,
-    absolute_difference = abs(rl$return_level - reference),
+    quantile_alea = rl$quantile,
+    quantile_reference = reference,
+    absolute_difference = abs(rl$quantile - reference),
     tolerance = tolerance,
-    passed = abs(rl$return_level - reference) <= tolerance
+    passed = abs(rl$quantile - reference) <= tolerance
   )
 }
 
@@ -102,17 +102,17 @@ comparisons <- do.call(
 # ---- Validation checks -------------------------------------------------------
 
 stopifnot(all(comparisons$passed))
-stopifnot(all(is.finite(comparisons$return_level_alea)))
-stopifnot(all(is.finite(comparisons$return_level_reference)))
+stopifnot(all(is.finite(comparisons$quantile_alea)))
+stopifnot(all(is.finite(comparisons$quantile_reference)))
 stopifnot(all(comparisons$absolute_difference <= comparisons$tolerance))
 
-# Within each distribution, return levels should increase with return period
+# Within each distribution, quantiles should increase with return period
 # for this fitted annual-maximum-like sample.
 by_distribution <- split(comparisons, comparisons$distribution)
 
 increasing_checks <- vapply(
   by_distribution,
-  function(z) all(diff(z$return_level_alea) > 0),
+  function(z) all(diff(z$quantile_alea) > 0),
   logical(1)
 )
 

@@ -22,7 +22,7 @@ test_that("alea_fit works for all implemented L-moment distributions", {
     expect_equal(fit$distribution, dist)
     expect_equal(fit$method, "lmom")
     expect_named(fit$parameters, examples[[dist]]$names)
-    expect_named(fit$return_levels, c("T10", "T25", "T50"))
+    expect_named(fit$quantiles, c("T10", "T25", "T50"))
     expect_true(fit$convergence$converged)
   }
 })
@@ -52,7 +52,7 @@ test_that("alea_fit works for all implemented MOM and MLE distributions", {
       expect_equal(fit$distribution, dist)
       expect_equal(fit$method, method)
       expect_named(fit$parameters, examples[[dist]]$names)
-      expect_named(fit$return_levels, c("T10", "T25", "T50"))
+      expect_named(fit$quantiles, c("T10", "T25", "T50"))
       expect_true(is.logical(fit$convergence$converged))
     }
   }

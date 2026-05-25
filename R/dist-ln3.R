@@ -136,7 +136,7 @@ fit_ln3_mle <- function(x, ...) {
   make_mle_fit_result_internal(para, "ln3", opt)
 }
 
-return_level_ln3_internal <- function(return_period, para, ...) {
+quantile_ln3_internal <- function(return_period, para, ...) {
   check_return_period(return_period)
   q_ln3_internal(1 - 1 / return_period, para)
 }

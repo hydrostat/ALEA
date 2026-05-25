@@ -2,7 +2,7 @@
 #'
 #' Fits one or more probability distributions to multiple stations or sites.
 #' Batch processing is robust: failures for one station, distribution, method,
-#' return-level, goodness-of-fit, diagnostics, or optional AI-selection step are
+#' quantile, goodness-of-fit, diagnostics, or optional AI-selection step are
 #' recorded in the errors table and do not stop the full workflow.
 #'
 #' @param data A data frame containing station and value columns.
@@ -25,6 +25,26 @@
 #' @param ... Additional arguments passed to fitting or selection helpers.
 #'
 #' @return An object of class `alea_batch`.
+#' @examples
+#' data <- data.frame(
+#'   station = rep(c("A", "B"), each = 10),
+#'   year = rep(2001:2010, times = 2),
+#'   value = c(42, 39, 51, 47, 62, 55, 50, 58, 60, 46,
+#'             50, 47, 61, 56, 75, 66, 60, 70, 72, 55)
+#' )
+#' batch <- alea_batch_fit(
+#'   data,
+#'   station = "station",
+#'   time = "year",
+#'   value = "value",
+#'   distributions = c("gev", "gum"),
+#'   methods = "lmom",
+#'   return_period = c(10, 25),
+#'   gof = TRUE
+#' )
+#' batch
+#' alea_results(batch, "quantiles")
+#'
 #' @export
 alea_batch_fit <- function(
     data,
@@ -74,7 +94,7 @@ alea_batch_fit <- function(
   stations <- list()
   fits <- list()
   fit_objects <- list()
-  return_levels <- list()
+  quantiles <- list()
   gof_results <- list()
   diagnostics_results <- list()
   selection <- list()
@@ -192,14 +212,14 @@ alea_batch_fit <- function(
         
         if (!is.null(return_period)) {
           rl_result <- tryCatch(
-            alea_return_level(fit_result, return_period = return_period),
+            alea_quantile(fit_result, return_period = return_period),
             error = function(e) e
           )
           
           if (inherits(rl_result, "error")) {
             errors[[length(errors) + 1L]] <- make_batch_error_row(
               station = station_id,
-              step = "return_level",
+              step = "quantile",
               distribution = distribution,
               method = method,
               message = conditionMessage(rl_result),
@@ -211,7 +231,7 @@ alea_batch_fit <- function(
               data.frame(station = station_id, stringsAsFactors = FALSE),
               rl_df
             )
-            return_levels[[length(return_levels) + 1L]] <- rl_df
+            quantiles[[length(quantiles) + 1L]] <- rl_df
           }
         }
         
@@ -282,16 +302,16 @@ alea_batch_fit <- function(
   }
   
   object <- list(
-    stations = bind_batch_rows(stations),
-    fits = bind_batch_rows(fits),
+    stations = order_alea_model_table_internal(bind_batch_rows(stations)),
+    fits = order_alea_model_table_internal(bind_batch_rows(fits)),
     fit_objects = fit_objects,
-    return_levels = bind_batch_rows(return_levels),
-    gof = bind_batch_rows(gof_results),
-    diagnostics = bind_batch_rows(diagnostics_results),
-    selection = bind_batch_rows(selection),
+    quantiles = order_alea_model_table_internal(bind_batch_rows(quantiles)),
+    gof = order_alea_model_table_internal(bind_batch_rows(gof_results)),
+    diagnostics = order_alea_model_table_internal(bind_batch_rows(diagnostics_results)),
+    selection = order_alea_model_table_internal(bind_batch_rows(selection)),
     selection_objects = selection_objects,
-    selected_models = bind_batch_rows(selected_models),
-    errors = bind_batch_error_rows(errors),
+    selected_models = order_alea_model_table_internal(bind_batch_rows(selected_models)),
+    errors = order_alea_model_table_internal(bind_batch_error_rows(errors)),
     settings = list(
       station = station,
       value = value,
@@ -313,11 +333,42 @@ alea_batch_fit <- function(
 
 #' Extract results from an ALEA batch object
 #'
-#' @param object An object of class `alea_batch`.
-#' @param type Result table to extract.
-#' @param ... Currently unused.
+#' Extracts station metadata, fit summaries, quantiles, goodness-of-fit tables,
+#' diagnostics, AI-selection summaries, selected models, stored fit objects, or
+#' structured errors from an `alea_batch` object.
 #'
-#' @return A data frame or list, depending on `type`.
+#' @param object An object of class `alea_batch`.
+#' @param type Character scalar. Result component to extract. Supported values
+#'   are `"stations"`, `"fits"`, `"fit_objects"`, `"quantiles"`, `"gof"`,
+#'   `"diagnostics"`, `"selection"`, `"selection_objects"`,
+#'   `"selected_models"`, and `"errors"`.
+#' @param ... Additional arguments.
+#'
+#' @return A data frame with a lightweight S3 class for compact console
+#'   printing, or a list for object-list components. Use `as.data.frame()` on
+#'   returned tables to access the complete underlying data frame.
+#'
+#' @details
+#' Tables returned by `alea_results()` are ordered for reporting. Quantile,
+#' goodness-of-fit, diagnostics, and error tables are ordered by station,
+#' distribution, and estimation method, followed by the relevant result field.
+#'
+#' @examples
+#' data <- data.frame(
+#'   station = rep(c("A", "B"), each = 10),
+#'   value = c(42, 39, 51, 47, 62, 55, 50, 58, 60, 46,
+#'             50, 47, 61, 56, 75, 66, 60, 70, 72, 55)
+#' )
+#' batch <- alea_batch_fit(
+#'   data, station = "station", value = "value",
+#'   distributions = c("gev", "gum"),
+#'   methods = "lmom",
+#'   return_period = c(10, 25),
+#'   gof = TRUE
+#' )
+#' alea_results(batch, "quantiles")
+#' as.data.frame(alea_results(batch, "quantiles"))
+#'
 #' @export
 alea_results <- function(
     object,
@@ -325,7 +376,7 @@ alea_results <- function(
       "stations",
       "fits",
       "fit_objects",
-      "return_levels",
+      "quantiles",
       "gof",
       "diagnostics",
       "selection",
@@ -338,22 +389,370 @@ alea_results <- function(
   if (!inherits(object, "alea_batch")) {
     stop("`object` must be an object of class 'alea_batch'.", call. = FALSE)
   }
-  
+
   type <- match.arg(type)
-  
+
+  result <- switch(
+    type,
+    stations = order_alea_model_table_internal(object$stations),
+    fits = order_alea_model_table_internal(object$fits),
+    fit_objects = object$fit_objects,
+    quantiles = order_alea_model_table_internal(object$quantiles),
+    gof = order_alea_model_table_internal(object$gof),
+    diagnostics = order_alea_model_table_internal(object$diagnostics),
+    selection = order_alea_model_table_internal(object$selection),
+    selection_objects = object$selection_objects,
+    selected_models = order_alea_model_table_internal(object$selected_models),
+    errors = order_alea_model_table_internal(normalize_batch_errors(object$errors))
+  )
+
+  if (is.data.frame(result)) {
+    result <- new_alea_batch_result(result, type)
+  }
+
+  result
+}
+
+
+new_alea_batch_result <- function(x, type) {
+  if (!is.data.frame(x)) {
+    return(x)
+  }
+
+  type_class <- switch(
+    type,
+    stations = "alea_batch_stations",
+    fits = "alea_batch_fits",
+    quantiles = "alea_batch_quantiles",
+    gof = "alea_batch_gof",
+    diagnostics = "alea_batch_diagnostics",
+    selection = "alea_batch_selection",
+    selected_models = "alea_batch_selected_models",
+    errors = "alea_batch_errors",
+    paste0("alea_batch_", type)
+  )
+
+  class(x) <- unique(c(type_class, "alea_batch_result", class(x)))
+  x
+}
+
+
+#' @export
+as.data.frame.alea_batch_result <- function(x, ...) {
+  class(x) <- setdiff(class(x), c(
+    "alea_batch_stations",
+    "alea_batch_fits",
+    "alea_batch_quantiles",
+    "alea_batch_gof",
+    "alea_batch_diagnostics",
+    "alea_batch_selection",
+    "alea_batch_selected_models",
+    "alea_batch_errors",
+    "alea_batch_result"
+  ))
+
+  as.data.frame(x, ...)
+}
+
+
+#' @export
+print.alea_batch_result <- function(x, digits = 4, max_rows = 20, ...) {
+  type <- batch_result_type(x)
+  df <- as.data.frame(x)
+
   switch(
     type,
-    stations = object$stations,
-    fits = object$fits,
-    fit_objects = object$fit_objects,
-    return_levels = object$return_levels,
-    gof = object$gof,
-    diagnostics = object$diagnostics,
-    selection = object$selection,
-    selection_objects = object$selection_objects,
-    selected_models = object$selected_models,
-    errors = normalize_batch_errors(object$errors)
+    stations = print_alea_batch_stations(df, digits = digits, max_rows = max_rows),
+    fits = print_alea_batch_fits(df, digits = digits, max_rows = max_rows),
+    quantiles = print_alea_batch_quantiles(df, digits = digits, max_rows = max_rows),
+    gof = print_alea_batch_gof(df, digits = digits, max_rows = max_rows),
+    diagnostics = print_alea_batch_diagnostics(df, digits = digits, max_rows = max_rows),
+    selection = print_alea_batch_selection(df, digits = digits, max_rows = max_rows),
+    selected_models = print_alea_batch_selected_models(df, digits = digits, max_rows = max_rows),
+    errors = print_alea_batch_errors(df, digits = digits, max_rows = max_rows),
+    print.data.frame(df, row.names = FALSE, ...)
   )
+
+  invisible(x)
+}
+
+
+batch_result_type <- function(x) {
+  cls <- class(x)
+
+  if ("alea_batch_stations" %in% cls) {
+    return("stations")
+  }
+  if ("alea_batch_fits" %in% cls) {
+    return("fits")
+  }
+  if ("alea_batch_quantiles" %in% cls) {
+    return("quantiles")
+  }
+  if ("alea_batch_gof" %in% cls) {
+    return("gof")
+  }
+  if ("alea_batch_diagnostics" %in% cls) {
+    return("diagnostics")
+  }
+  if ("alea_batch_selection" %in% cls) {
+    return("selection")
+  }
+  if ("alea_batch_selected_models" %in% cls) {
+    return("selected_models")
+  }
+  if ("alea_batch_errors" %in% cls) {
+    return("errors")
+  }
+
+  "unknown"
+}
+
+
+
+print_empty_batch_result <- function(x, title, full_table_label) {
+  cat(title, "\n", sep = "")
+  cat("Rows: 0\n\n")
+  print.data.frame(as.data.frame(x), row.names = FALSE)
+  cat("\nUse as.data.frame(x) for the full ", full_table_label, ".\n", sep = "")
+  invisible(x)
+}
+
+
+print_alea_batch_stations <- function(x, digits = 4, max_rows = 20) {
+  if (nrow(x) == 0L) {
+    return(print_empty_batch_result(x, "ALEA batch stations", "station table"))
+  }
+
+  cat("ALEA batch stations\n")
+  cat("Stations:", nrow(x), "\n\n")
+
+  cols <- intersect(
+    c("station", "n", "n_valid", "n_missing", "min_value", "max_value", "first_time", "last_time"),
+    names(x)
+  )
+
+  out <- x[, cols, drop = FALSE]
+  out <- round_numeric_columns(out, digits = digits)
+  print_batch_compact_table(out, max_rows = max_rows)
+  cat("\nUse as.data.frame(x) for the full station table.\n")
+}
+
+
+print_alea_batch_fits <- function(x, digits = 4, max_rows = 20) {
+  if (nrow(x) == 0L) {
+    return(print_empty_batch_result(x, "ALEA batch fit summary", "fit table"))
+  }
+
+  cat("ALEA batch fit summary\n")
+  cat("Stations:", count_unique_non_missing(x$station), "\n")
+  cat("Distributions:", collapse_unique(x$distribution), "\n")
+  cat("Methods:", collapse_unique(x$method), "\n")
+  cat("Rows:", nrow(x), "\n\n")
+
+  cols <- intersect(c("station", "distribution", "method", "status", "n", "fit_index"), names(x))
+  out <- x[, cols, drop = FALSE]
+  print_batch_compact_table(out, max_rows = max_rows)
+  cat("\nUse as.data.frame(x) for the full fit table.\n")
+}
+
+
+print_alea_batch_quantiles <- function(x, digits = 4, max_rows = 20) {
+  if (nrow(x) == 0L) {
+    return(print_empty_batch_result(x, "ALEA batch quantiles", "quantile table"))
+  }
+
+  cat("ALEA batch quantiles\n")
+  cat("Stations:", count_unique_non_missing(x$station), "\n")
+  cat("Distributions:", collapse_unique(x$distribution), "\n")
+  cat("Methods:", collapse_unique(x$method), "\n")
+  cat("Rows:", nrow(x), "\n\n")
+
+  cols <- intersect(c("station", "distribution", "method", "return_period", "quantile"), names(x))
+  out <- x[, cols, drop = FALSE]
+  out <- round_numeric_columns(out, digits = digits)
+  print_batch_compact_table(out, max_rows = max_rows)
+  cat("\nUse as.data.frame(x) for the full quantile table.\n")
+}
+
+
+print_alea_batch_gof <- function(x, digits = 4, max_rows = 20) {
+  if (nrow(x) == 0L) {
+    return(print_empty_batch_result(x, "ALEA batch goodness-of-fit results", "goodness-of-fit table"))
+  }
+
+  cat("ALEA batch goodness-of-fit results\n")
+  cat("Stations:", count_unique_non_missing(x$station), "\n")
+  cat("Distributions:", collapse_unique(x$distribution), "\n")
+  cat("Methods:", collapse_unique(x$method), "\n")
+  cat("Rows:", nrow(x), "\n\n")
+
+  out <- data.frame(
+    station = x$station,
+    distribution = x$distribution,
+    method = x$method,
+    statistic = x$statistic,
+    estimate = round(x$estimate, digits),
+    better = ifelse(isTRUE(x$higher_is_better), "higher", "lower"),
+    stringsAsFactors = FALSE
+  )
+
+  if (length(x$higher_is_better) > 1L) {
+    out$better <- ifelse(x$higher_is_better, "higher", "lower")
+  }
+
+  print_batch_compact_table(out, max_rows = max_rows)
+  cat("\nCalibrated p-values are not implemented.\n")
+  cat("Use as.data.frame(x) for the full goodness-of-fit table.\n")
+}
+
+
+print_alea_batch_diagnostics <- function(x, digits = 4, max_rows = 20) {
+  if (nrow(x) == 0L) {
+    return(print_empty_batch_result(x, "ALEA batch diagnostics", "diagnostics table"))
+  }
+
+  cat("ALEA batch diagnostics\n")
+  cat("Stations:", count_unique_non_missing(x$station), "\n")
+  cat("Distributions:", collapse_unique(x$distribution), "\n")
+  cat("Methods:", collapse_unique(x$method), "\n")
+  cat("Rows:", nrow(x), "\n\n")
+
+  cols <- intersect(
+    c("station", "distribution", "method", "diagnostic", "value", "p_value", "status", "reject"),
+    names(x)
+  )
+  out <- x[, cols, drop = FALSE]
+  out <- round_numeric_columns(out, digits = digits)
+  print_batch_compact_table(out, max_rows = max_rows)
+  cat("\nUse as.data.frame(x) for the full diagnostics table.\n")
+}
+
+
+print_alea_batch_selection <- function(x, digits = 4, max_rows = 20) {
+  if (nrow(x) == 0L) {
+    cat("ALEA batch AI selection\n")
+    cat("Rows: 0\n\n")
+    cat("No AI-selection results are available.\n")
+    return(invisible(x))
+  }
+
+  cat("ALEA batch AI selection\n")
+  cat("Stations:", count_unique_non_missing(x$station), "\n")
+  cat("Rows:", nrow(x), "\n\n")
+
+  cols <- intersect(
+    c("station", "selected_distribution", "top_support", "second_family", "second_support", "top1_top2_margin", "decision_strength"),
+    names(x)
+  )
+  out <- x[, cols, drop = FALSE]
+  out <- round_numeric_columns(out, digits = digits)
+  print_batch_compact_table(out, max_rows = max_rows)
+  cat("\nUse as.data.frame(x) for the full AI-selection table.\n")
+}
+
+
+print_alea_batch_selected_models <- function(x, digits = 4, max_rows = 20) {
+  if (nrow(x) == 0L) {
+    cat("ALEA batch selected models\n")
+    cat("Rows: 0\n\n")
+    cat("No selected-model results are available.\n")
+    return(invisible(x))
+  }
+
+  cat("ALEA batch selected models\n")
+  cat("Stations:", count_unique_non_missing(x$station), "\n")
+  cat("Rows:", nrow(x), "\n\n")
+
+  cols <- intersect(
+    c("station", "selected_distribution", "selected_method", "fit_index", "selection_index", "status"),
+    names(x)
+  )
+  out <- x[, cols, drop = FALSE]
+  print_batch_compact_table(out, max_rows = max_rows)
+  cat("\nUse as.data.frame(x) for the full selected-model table.\n")
+}
+
+
+print_alea_batch_errors <- function(x, digits = 4, max_rows = 20) {
+  cat("ALEA batch errors\n")
+  cat("Rows:", nrow(x), "\n\n")
+
+  if (nrow(x) == 0L) {
+    cat("No errors were recorded.\n")
+    return(invisible(x))
+  }
+
+  cols <- intersect(c("station", "step", "distribution", "method", "message", "class"), names(x))
+  out <- x[, cols, drop = FALSE]
+  print_batch_compact_table(out, max_rows = max_rows)
+  cat("\nUse as.data.frame(x) for the full error table.\n")
+}
+
+
+print_batch_compact_table <- function(x, max_rows = 20) {
+  if (nrow(x) == 0L) {
+    print.data.frame(x, row.names = FALSE)
+    return(invisible(x))
+  }
+
+  out <- compact_rows_for_print(x, max_rows = max_rows)
+  print.data.frame(out, row.names = FALSE)
+
+  if (nrow(x) > max_rows) {
+    cat("\nShowing first and last rows of", nrow(x), "total rows.\n")
+  }
+
+  invisible(x)
+}
+
+
+compact_rows_for_print <- function(x, max_rows = 20) {
+  if (nrow(x) <= max_rows) {
+    return(x)
+  }
+
+  n_head <- max(1L, floor(max_rows / 2))
+  n_tail <- max(1L, max_rows - n_head)
+
+  ellipsis <- as.data.frame(
+    as.list(rep("...", ncol(x))),
+    stringsAsFactors = FALSE
+  )
+  names(ellipsis) <- names(x)
+
+  rbind(
+    utils::head(x, n_head),
+    ellipsis,
+    utils::tail(x, n_tail)
+  )
+}
+
+
+round_numeric_columns <- function(x, digits = 4) {
+  for (nm in names(x)) {
+    if (is.numeric(x[[nm]])) {
+      x[[nm]] <- round(x[[nm]], digits)
+    }
+  }
+
+  x
+}
+
+
+collapse_unique <- function(x) {
+  x <- unique(as.character(x[!is.na(x)]))
+
+  if (length(x) == 0L) {
+    return("none")
+  }
+
+  paste(x, collapse = ", ")
+}
+
+
+count_unique_non_missing <- function(x) {
+  length(unique(x[!is.na(x)]))
 }
 
 
@@ -389,7 +788,7 @@ print.alea_batch <- function(x, ...) {
 
 #' @export
 as.data.frame.alea_batch <- function(x, ...) {
-  x$fits
+  order_alea_model_table_internal(x$fits)
 }
 
 
@@ -404,7 +803,7 @@ validate_alea_batch <- function(x) {
     "stations",
     "fits",
     "fit_objects",
-    "return_levels",
+    "quantiles",
     "gof",
     "diagnostics",
     "selection",

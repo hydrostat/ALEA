@@ -36,8 +36,8 @@ Only deterministic, synthetic, bundled, or license-safe cases were promoted to a
 
 | Case ID | Category | Workflow area | Status | Automated test |
 |---|---|---|---|---|
-| P13-GUM-THEORY-001 | theoretical_handcheck | Gumbel return levels | PASS | `tests/testthat/test-phase13-gumbel-reference.R` |
-| P13-LMOM-REF-001 | independent_r_reference | L-moment fitted return levels | PASS | `tests/testthat/test-phase13-lmom-reference-comparisons.R` |
+| P13-GUM-THEORY-001 | theoretical_handcheck | Gumbel quantiles | PASS | `tests/testthat/test-phase13-gumbel-reference.R` |
+| P13-LMOM-REF-001 | independent_r_reference | L-moment fitted quantiles | PASS | `tests/testthat/test-phase13-lmom-reference-comparisons.R` |
 | P13-LN2-LN3-001 | theoretical_handcheck | LN2/LN3 zero-threshold convention | PASS | `tests/testthat/test-phase13-ln2-ln3-zero-threshold.R` |
 | P13-GOF-REF-001 | theoretical_handcheck | GOF statistics and information criteria | PASS | `tests/testthat/test-phase13-gof-reference-recalculation.R` |
 | P13-AI-LIGHT-001 | fads_ai_reference | FADS_AI light-model metadata and prediction | PASS | `tests/testthat/test-phase13-ai-light-reference.R` |
@@ -86,7 +86,7 @@ tests/testthat/test-phase13-batch-reference-workflow.R
 
 ### P13-GUM-THEORY-001
 
-Validated Gumbel return levels against the closed-form Gumbel quantile formula:
+Validated Gumbel quantiles against the closed-form Gumbel quantile formula:
 
 ```text
 p = 1 - 1 / T
@@ -103,7 +103,7 @@ Result: PASS.
 
 ### P13-LMOM-REF-001
 
-Validated ALEA-R L-moment fitted return levels against direct `lmom` reference calculations for:
+Validated ALEA-R L-moment fitted quantiles against direct `lmom` reference calculations for:
 
 ```text
 gev, gpa, gum, pe3
@@ -198,7 +198,7 @@ alea_batch_fit()
 alea_results()
 stations
 fits
-return_levels
+quantiles
 gof
 diagnostics
 selection

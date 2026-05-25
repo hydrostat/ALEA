@@ -20,7 +20,7 @@ test_that("alea_batch_fit returns an alea_batch object", {
   expect_s3_class(batch, "alea_batch")
   expect_equal(nrow(alea_results(batch, "stations")), 2)
   expect_equal(nrow(alea_results(batch, "fits")), 2)
-  expect_equal(nrow(alea_results(batch, "return_levels")), 4)
+  expect_equal(nrow(alea_results(batch, "quantiles")), 4)
   expect_equal(nrow(alea_results(batch, "errors")), 0)
 })
 
@@ -272,7 +272,7 @@ test_that("alea_batch object has the final expected structure", {
     "stations",
     "fits",
     "fit_objects",
-    "return_levels",
+    "quantiles",
     "gof",
     "diagnostics",
     "selection",
@@ -288,7 +288,7 @@ test_that("alea_batch object has the final expected structure", {
   expect_true(is.data.frame(batch$stations))
   expect_true(is.data.frame(batch$fits))
   expect_true(is.list(batch$fit_objects))
-  expect_true(is.data.frame(batch$return_levels))
+  expect_true(is.data.frame(batch$quantiles))
   expect_true(is.data.frame(batch$gof))
   expect_true(is.data.frame(batch$diagnostics))
   expect_true(is.data.frame(batch$selection))
@@ -328,7 +328,7 @@ test_that("alea_results extracts every final alea_batch component", {
   expect_true(is.data.frame(alea_results(batch, "stations")))
   expect_true(is.data.frame(alea_results(batch, "fits")))
   expect_true(is.list(alea_results(batch, "fit_objects")))
-  expect_true(is.data.frame(alea_results(batch, "return_levels")))
+  expect_true(is.data.frame(alea_results(batch, "quantiles")))
   expect_true(is.data.frame(alea_results(batch, "gof")))
   expect_true(is.data.frame(alea_results(batch, "diagnostics")))
   expect_true(is.data.frame(alea_results(batch, "selection")))
@@ -368,7 +368,7 @@ test_that("alea_batch_fit continues when one station has no finite data", {
   
   stations <- alea_results(batch, "stations")
   fits <- alea_results(batch, "fits")
-  return_levels <- alea_results(batch, "return_levels")
+  quantiles <- alea_results(batch, "quantiles")
   errors <- alea_results(batch, "errors")
   
   expect_equal(nrow(stations), 2)
@@ -379,7 +379,7 @@ test_that("alea_batch_fit continues when one station has no finite data", {
   expect_true(any(fits$station == "good" & fits$status == "ok"))
   expect_false(any(fits$station == "bad" & fits$status == "ok"))
   
-  expect_true(nrow(return_levels) > 0)
+  expect_true(nrow(quantiles) > 0)
   
   expect_true(nrow(errors) >= 1)
   expect_true(any(errors$station == "bad"))
@@ -428,7 +428,7 @@ test_that("alea_batch_fit records fit-level failures without stopping successful
     expect_true(all(errors$step %in% c(
       "data",
       "fit",
-      "return_level",
+      "quantile",
       "gof",
       "diagnostics",
       "selection"
@@ -515,7 +515,7 @@ test_that("alea_batch print and as.data.frame methods are stable", {
   df <- as.data.frame(batch)
   
   expect_true(is.data.frame(df))
-  expect_identical(df, alea_results(batch, "fits"))
+  expect_identical(df, as.data.frame(alea_results(batch, "fits")))
 })
 
 test_that("alea_batch stores empty errors with stable columns", {
@@ -572,3 +572,115 @@ test_that("alea_batch errors table has stable columns when errors are present", 
   )
   expect_true(nrow(errors) > 0L)
 })
+
+test_that("alea_results returns compact-print batch result data frames", {
+  set.seed(123)
+
+  dat <- data.frame(
+    station = rep(c("A", "B"), each = 35),
+    year = rep(seq_len(35), times = 2),
+    value = c(
+      rnorm(35, mean = 100, sd = 10),
+      rnorm(35, mean = 130, sd = 12)
+    )
+  )
+
+  batch <- alea_batch_fit(
+    data = dat,
+    station = "station",
+    time = "year",
+    value = "value",
+    distributions = c("gev", "gum"),
+    methods = c("lmom"),
+    return_period = c(10, 50),
+    gof = TRUE,
+    diagnostics = TRUE,
+    select = "ai"
+  )
+
+  stations <- alea_results(batch, "stations")
+  fits <- alea_results(batch, "fits")
+  quantiles <- alea_results(batch, "quantiles")
+  gof <- alea_results(batch, "gof")
+  diagnostics <- alea_results(batch, "diagnostics")
+  selection <- alea_results(batch, "selection")
+  selected_models <- alea_results(batch, "selected_models")
+  errors <- alea_results(batch, "errors")
+
+  expect_s3_class(stations, "alea_batch_stations")
+  expect_s3_class(fits, "alea_batch_fits")
+  expect_s3_class(quantiles, "alea_batch_quantiles")
+  expect_s3_class(gof, "alea_batch_gof")
+  expect_s3_class(diagnostics, "alea_batch_diagnostics")
+  expect_s3_class(selection, "alea_batch_selection")
+  expect_s3_class(selected_models, "alea_batch_selected_models")
+  expect_s3_class(errors, "alea_batch_errors")
+
+  expect_s3_class(as.data.frame(quantiles), "data.frame")
+  expect_false(inherits(as.data.frame(quantiles), "alea_batch_quantiles"))
+
+  expect_output(print(stations), "ALEA batch stations")
+  expect_output(print(fits), "ALEA batch fit summary")
+  expect_output(print(quantiles), "ALEA batch quantiles")
+  expect_output(print(gof), "ALEA batch goodness-of-fit results")
+  expect_output(print(diagnostics), "ALEA batch diagnostics")
+  expect_output(print(selection), "ALEA batch AI selection")
+  expect_output(print(selected_models), "ALEA batch selected models")
+  expect_output(print(errors), "ALEA batch errors")
+})
+
+
+test_that("alea_results tables preserve public sorting", {
+  set.seed(123)
+
+  dat <- data.frame(
+    station = rep(c("B", "A"), each = 45),
+    year = rep(seq_len(45), times = 2),
+    value = c(
+      rnorm(45, mean = 120, sd = 15),
+      rnorm(45, mean = 100, sd = 10)
+    )
+  )
+
+  batch <- alea_batch_fit(
+    data = dat,
+    station = "station",
+    time = "year",
+    value = "value",
+    distributions = c("pe3", "gev", "gum"),
+    methods = c("mle", "lmom"),
+    return_period = c(50, 10),
+    gof = TRUE,
+    diagnostics = TRUE
+  )
+
+  check_sorted <- function(df, cols) {
+    ord <- do.call(base::order, unname(df[cols]))
+    identical(seq_len(nrow(df)), ord)
+  }
+
+  expect_true(check_sorted(
+    as.data.frame(alea_results(batch, "fits")),
+    c("station", "distribution", "method")
+  ))
+
+  expect_true(check_sorted(
+    as.data.frame(alea_results(batch, "quantiles")),
+    c("station", "distribution", "method", "return_period")
+  ))
+
+  gof <- as.data.frame(alea_results(batch, "gof"))
+  gof$.statistic_order <- match(gof$statistic, c("ks", "cvm", "ad", "loglik", "aic", "bic"))
+  expect_true(check_sorted(gof, c("station", "distribution", "method", ".statistic_order")))
+
+  diagnostics <- as.data.frame(alea_results(batch, "diagnostics"))
+  diagnostics$.diagnostic_order <- match(
+    diagnostics$diagnostic,
+    c(
+      "sample_size", "missing", "ties", "range", "skewness",
+      "randomness", "independence", "homogeneity", "stationarity"
+    )
+  )
+  expect_true(check_sorted(diagnostics, c("station", "distribution", "method", ".diagnostic_order")))
+})
+

@@ -40,12 +40,12 @@ test_that("GPA rejects invalid parameter vectors", {
   expect_error(ALEA:::p_gpa_internal(1, c(location = 0, scale = 1, shape = 0)), "names")
 })
 
-test_that("GPA return levels match quantiles when exceedance rate is one", {
+test_that("GPA quantiles match quantiles when exceedance rate is one", {
   para <- c(xi = 0, alpha = 2, k = -0.1)
   return_period <- c(2, 10, 100)
 
   expect_equal(
-    ALEA:::return_level_gpa_internal(return_period, para, exceedance_rate = 1),
+    ALEA:::quantile_gpa_internal(return_period, para, exceedance_rate = 1),
     ALEA:::q_gpa_internal(1 - 1 / return_period, para)
   )
 })

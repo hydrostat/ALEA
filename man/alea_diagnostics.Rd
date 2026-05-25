@@ -45,7 +45,7 @@ values are \code{"sample_size"}, \code{"missing"}, \code{"ties"}, \code{"range"}
 
 \item{alpha}{Significance level used by hypothesis-test diagnostics.}
 
-\item{...}{Additional arguments passed to methods. Currently unused.}
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A data frame with S3 class \code{alea_diagnostics}.
@@ -59,6 +59,16 @@ Diagnostics are intended to flag potential data issues. They do not replace
 formal hydrological judgment and do not automatically invalidate a fitted
 model.
 
-The initial diagnostics include simple sample checks and hypothesis-based
-diagnostics implemented through the CRAN package \code{trend} when available.
+Diagnostics include simple sample checks and hypothesis-based checks
+implemented through the CRAN package \code{trend} when available.
+}
+\examples{
+x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+       60.3, 45.9)
+diagnostics <- alea_diagnostics(x)
+diagnostics
+
+fit <- alea_fit(x, distribution = "gev", method = "lmom")
+alea_diagnostics(fit)
+
 }

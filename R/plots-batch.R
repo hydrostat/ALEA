@@ -6,26 +6,50 @@
 #'
 #' @param x An object of class `alea_batch`.
 #' @param type Character scalar. Plot type. One of `"selected_models"`,
-#'   `"return_levels"`, `"gof"`, or `"diagnostics"`.
+#'   `"quantiles"`, `"gof"`, or `"diagnostics"`.
 #' @param statistic Character scalar. Goodness-of-fit statistic used when
 #'   `type = "gof"`.
 #' @param diagnostic Character scalar or `NULL`. Diagnostic used when
 #'   `type = "diagnostics"`. If `NULL`, all diagnostics are summarized by
 #'   status.
 #' @param return_period_scale Character scalar. Return-period axis scale when
-#'   `type = "return_levels"`. One of `"gumbel"`, `"log"`, or `"linear"`.   
-#' @param ... Additional arguments passed to methods. Currently unused.
+#'   `type = "quantiles"`. One of `"gumbel"`, `"log"`, or `"linear"`.
+#' @param plot_observed Logical scalar. If `TRUE`, observed plotting-position
+#'   points are added to batch quantile plots.
+#' @param plotting_position_a Numeric scalar. Plotting-position parameter `a`
+#'   used for observed quantile points, with plotting positions
+#'   `p_i = (i - a) / (n + 1 - 2 * a)` and empirical return periods
+#'   `T_i = 1 / (1 - p_i)`.
+#' @param ... Additional arguments passed to methods.
 #'
 #' @return A `ggplot` object.
+#'
+#' @examples
+#' data <- data.frame(
+#'   station = rep(c("A", "B"), each = 10),
+#'   value = c(42, 39, 51, 47, 62, 55, 50, 58, 60, 46,
+#'             50, 47, 61, 56, 75, 66, 60, 70, 72, 55)
+#' )
+#' batch <- alea_batch_fit(
+#'   data, station = "station", value = "value",
+#'   distributions = c("gev", "gum"),
+#'   methods = "lmom",
+#'   return_period = c(10, 25),
+#'   gof = TRUE
+#' )
+#' plot(batch, type = "quantiles")
+#' plot(batch, type = "quantiles", plot_observed = FALSE)
 #'
 #' @method plot alea_batch
 #' @export
 plot.alea_batch <- function(
     x,
-    type = c("selected_models", "return_levels", "gof", "diagnostics"),
+    type = c("selected_models", "quantiles", "gof", "diagnostics"),
     statistic = "aic",
     diagnostic = NULL,
     return_period_scale = c("gumbel", "log", "linear"),
+    plot_observed = TRUE,
+    plotting_position_a = 0.44,
     ...
 ) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
@@ -41,10 +65,12 @@ plot.alea_batch <- function(
     return(plot_alea_batch_selected_models(x))
   }
   
-  if (type == "return_levels") {
-    return(plot_alea_batch_return_levels(
+  if (type == "quantiles") {
+    return(plot_alea_batch_quantiles(
       x,
-      return_period_scale = return_period_scale
+      return_period_scale = return_period_scale,
+      plot_observed = plot_observed,
+      plotting_position_a = plotting_position_a
     ))
   }
   
@@ -97,40 +123,78 @@ plot_alea_batch_selected_models <- function(x) {
     alea_plot_theme()
 }
 
-plot_alea_batch_return_levels <- function(
+plot_alea_batch_quantiles <- function(
     x,
-    return_period_scale = c("gumbel", "log", "linear")
+    return_period_scale = c("gumbel", "log", "linear"),
+    plot_observed = TRUE,
+    plotting_position_a = 0.44
 ) {
   return_period_scale <- match.arg(return_period_scale)
-  
-  data <- validate_batch_return_levels_plot_data(x$return_levels)
-  
-  data$return_period_axis <- transform_return_period_axis(
-    return_period = data$return_period,
-    scale = return_period_scale
+  validate_quantile_observed_plot_args(
+    plot_observed = plot_observed,
+    plotting_position_a = plotting_position_a
   )
-  
-  data$model_label <- make_return_level_model_label(data)
-  
+
+  data <- validate_batch_quantiles_plot_data(x$quantiles)
+
   return_period_ticks <- sort(unique(data$return_period))
   return_period_tick_positions <- transform_return_period_axis(
     return_period = return_period_ticks,
     scale = return_period_scale
   )
-  
-  multiple_models <- length(unique(data$model_label)) > 1L
-  
+
+  observed <- make_observed_batch_quantile_plot_data(
+    x = x,
+    return_period_scale = return_period_scale,
+    max_return_period = max(return_period_ticks, na.rm = TRUE),
+    plotting_position_a = plotting_position_a
+  )
+
+  model <- make_batch_quantile_model_plot_data(
+    x = x,
+    return_period_ticks = return_period_ticks,
+    return_period_scale = return_period_scale
+  )
+
+  if (nrow(model) < 1L) {
+    model <- data
+    model$return_period_axis <- transform_return_period_axis(
+      return_period = model$return_period,
+      scale = return_period_scale
+    )
+    model$model_label <- make_quantile_model_label(model)
+  }
+
+  multiple_models <- length(unique(model$model_label)) > 1L
+
   p <- ggplot2::ggplot(
-    data,
-    ggplot2::aes(x = return_period_axis, y = return_level)
+    model,
+    ggplot2::aes(x = return_period_axis, y = quantile)
   ) +
     ggplot2::geom_line(
       ggplot2::aes(
-        group = model_label,
+        group = interaction(station, model_label, drop = TRUE),
         color = model_label
       ),
       linewidth = 0.5
-    ) +
+    )
+
+  if (isTRUE(plot_observed) && nrow(observed) > 0L) {
+    p <- p +
+      ggplot2::geom_point(
+        data = observed,
+        ggplot2::aes(x = return_period_axis, y = quantile),
+        inherit.aes = FALSE,
+        shape = 21,
+        size = 1.0,
+        stroke = 0.35,
+        color = alea_plot_color("observed"),
+        fill = "black",
+        alpha = 0.5
+      )
+  }
+
+  p <- p +
     ggplot2::scale_x_continuous(
       breaks = return_period_tick_positions,
       labels = return_period_ticks
@@ -140,13 +204,13 @@ plot_alea_batch_return_levels <- function(
       scales = "free_y"
     ) +
     ggplot2::labs(
-      title = "Batch return-level plot",
+      title = "Batch quantile plot",
       subtitle = "One panel per station",
       x = "Return period",
       y = "Quantile"
     ) +
     alea_plot_theme()
-  
+
   if (multiple_models) {
     p <- p +
       ggplot2::labs(
@@ -162,10 +226,168 @@ plot_alea_batch_return_levels <- function(
         guide = "none"
       )
   }
-  
+
   p
 }
 
+make_batch_quantile_model_plot_data <- function(
+    x,
+    return_period_ticks,
+    return_period_scale
+) {
+  fits <- x$fits
+  fit_objects <- x$fit_objects
+
+  if (!is.data.frame(fits) || length(fit_objects) < 1L) {
+    return(empty_batch_quantile_model_plot_data())
+  }
+
+  ok_fits <- fits[fits$status == "ok" & is.finite(fits$fit_index), , drop = FALSE]
+  if (nrow(ok_fits) < 1L) {
+    return(empty_batch_quantile_model_plot_data())
+  }
+
+  ok_fits <- ok_fits[order(ok_fits$station, ok_fits$distribution, ok_fits$method), , drop = FALSE]
+
+  model_return_period <- make_model_return_period_grid(
+    return_period_ticks = return_period_ticks,
+    n_grid = 200
+  )
+
+  rows <- lapply(seq_len(nrow(ok_fits)), function(i) {
+    fit_index <- as.integer(ok_fits$fit_index[i])
+    if (!is.finite(fit_index) || fit_index < 1L || fit_index > length(fit_objects)) {
+      return(NULL)
+    }
+
+    fit <- fit_objects[[fit_index]]
+
+    model <- tryCatch(
+      alea_quantile(fit, return_period = model_return_period),
+      error = function(e) NULL
+    )
+
+    if (is.null(model)) {
+      return(NULL)
+    }
+
+    model <- as.data.frame(model)
+    if (nrow(model) < 1L) {
+      return(NULL)
+    }
+
+    model$station <- ok_fits$station[i]
+    model
+  })
+
+  rows <- rows[!vapply(rows, is.null, logical(1))]
+  if (length(rows) < 1L) {
+    return(empty_batch_quantile_model_plot_data())
+  }
+
+  model <- do.call(rbind, rows)
+  model$return_period_axis <- transform_return_period_axis(
+    return_period = model$return_period,
+    scale = return_period_scale
+  )
+  model$model_label <- make_quantile_model_label(model)
+
+  model
+}
+
+empty_batch_quantile_model_plot_data <- function() {
+  data.frame(
+    station = character(),
+    distribution = character(),
+    method = character(),
+    return_period = numeric(),
+    probability = numeric(),
+    quantile = numeric(),
+    location = numeric(),
+    scale = numeric(),
+    shape = numeric(),
+    return_period_axis = numeric(),
+    model_label = character(),
+    stringsAsFactors = FALSE
+  )
+}
+
+make_observed_batch_quantile_plot_data <- function(
+    x,
+    return_period_scale,
+    max_return_period,
+    plotting_position_a = 0.44
+) {
+  fits <- x$fits
+  fit_objects <- x$fit_objects
+
+  if (!is.data.frame(fits) || length(fit_objects) < 1L) {
+    return(empty_observed_batch_quantile_plot_data())
+  }
+
+  ok_fits <- fits[fits$status == "ok" & is.finite(fits$fit_index), , drop = FALSE]
+  if (nrow(ok_fits) < 1L) {
+    return(empty_observed_batch_quantile_plot_data())
+  }
+
+  ok_fits <- ok_fits[order(ok_fits$station, ok_fits$distribution, ok_fits$method), , drop = FALSE]
+  ok_fits <- ok_fits[!duplicated(ok_fits$station), , drop = FALSE]
+
+  rows <- lapply(seq_len(nrow(ok_fits)), function(i) {
+    fit_index <- as.integer(ok_fits$fit_index[i])
+    if (!is.finite(fit_index) || fit_index < 1L || fit_index > length(fit_objects)) {
+      return(NULL)
+    }
+
+    fit <- fit_objects[[fit_index]]
+    if (is.null(fit$data)) {
+      return(NULL)
+    }
+
+    data <- as.numeric(fit$data)
+    data <- data[is.finite(data)]
+
+    if (length(data) < 2L || length(unique(data)) < 2L) {
+      return(NULL)
+    }
+
+    observed <- make_observed_quantile_data(
+      data = data,
+      plotting_position_a = plotting_position_a
+    )
+
+    observed <- observed[observed$return_period <= max_return_period, , drop = FALSE]
+    if (nrow(observed) < 1L) {
+      return(NULL)
+    }
+
+    observed$station <- ok_fits$station[i]
+    observed
+  })
+
+  rows <- rows[!vapply(rows, is.null, logical(1))]
+  if (length(rows) < 1L) {
+    return(empty_observed_batch_quantile_plot_data())
+  }
+
+  observed <- do.call(rbind, rows)
+  observed$return_period_axis <- transform_return_period_axis(
+    return_period = observed$return_period,
+    scale = return_period_scale
+  )
+
+  observed
+}
+
+empty_observed_batch_quantile_plot_data <- function() {
+  data.frame(
+    station = character(),
+    return_period = numeric(),
+    quantile = numeric(),
+    return_period_axis = numeric(),
+    stringsAsFactors = FALSE
+  )
+}
 
 plot_alea_batch_gof <- function(x, statistic = "aic") {
   data <- validate_batch_gof_plot_data(x$gof, statistic = statistic)
@@ -273,10 +495,10 @@ validate_batch_selected_models_plot_data <- function(data) {
 }
 
 
-validate_batch_return_levels_plot_data <- function(data) {
+validate_batch_quantiles_plot_data <- function(data) {
   if (is.null(data) || nrow(as.data.frame(data)) < 1L) {
     stop(
-      "`x$return_levels` is empty. Supply `return_period` in `alea_batch_fit()` before plotting return levels.",
+      "`x$quantiles` is empty. Supply `return_period` in `alea_batch_fit()` before plotting quantiles.",
       call. = FALSE
     )
   }
@@ -288,23 +510,23 @@ validate_batch_return_levels_plot_data <- function(data) {
     "distribution",
     "method",
     "return_period",
-    "return_level"
+    "quantile"
   )
   
   missing_columns <- setdiff(required_columns, names(data))
   
   if (length(missing_columns) > 0L) {
     stop(
-      "`x$return_levels` is missing required column(s): ",
+      "`x$quantiles` is missing required column(s): ",
       paste(missing_columns, collapse = ", "),
       ".",
       call. = FALSE
     )
   }
   
-  if (!is.numeric(data$return_period) || !is.numeric(data$return_level)) {
+  if (!is.numeric(data$return_period) || !is.numeric(data$quantile)) {
     stop(
-      "`x$return_levels$return_period` and `x$return_levels$return_level` must be numeric.",
+      "`x$quantiles$return_period` and `x$quantiles$quantile` must be numeric.",
       call. = FALSE
     )
   }
@@ -316,10 +538,10 @@ validate_batch_return_levels_plot_data <- function(data) {
     )
   }
   
-  finite_rows <- is.finite(data$return_level)
+  finite_rows <- is.finite(data$quantile)
   
   if (!any(finite_rows)) {
-    stop("At least one finite batch return level is required for plotting.", call. = FALSE)
+    stop("At least one finite batch quantile is required for plotting.", call. = FALSE)
   }
   
   data <- data[finite_rows, , drop = FALSE]
@@ -328,7 +550,7 @@ validate_batch_return_levels_plot_data <- function(data) {
   data$distribution <- as.character(data$distribution)
   data$method <- as.character(data$method)
   
-  data$model_label <- make_return_level_model_label(data)
+  data$model_label <- make_quantile_model_label(data)
   
   data[order(data$station, data$distribution, data$method, data$return_period), , drop = FALSE]
 }

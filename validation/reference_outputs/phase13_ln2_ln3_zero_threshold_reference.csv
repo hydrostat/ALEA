@@ -1,4 +1,4 @@
-"case_id","distribution","method","return_period","probability_alea","probability_reference","zeta_reference","return_level_alea","return_level_reference","absolute_difference","tolerance","passed"
+"case_id","distribution","method","return_period","probability_alea","probability_reference","zeta_reference","quantile_alea","quantile_reference","absolute_difference","tolerance","passed"
 "P13-LN2-LN3-001","ln2","lmom",2,0.5,0.5,0,55.3193299572852,55.3193299572852,0,1e-10,TRUE
 "P13-LN2-LN3-001","ln2","lmom",5,0.8,0.8,0,62.698638106648,62.698638106648,0,1e-10,TRUE
 "P13-LN2-LN3-001","ln2","lmom",10,0.9,0.9,0,66.9397556077078,66.9397556077078,0,1e-10,TRUE

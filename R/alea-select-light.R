@@ -13,12 +13,19 @@
 #' FADS_AI output should be interpreted as decision-support evidence for
 #' candidate distribution families. It is not proof of the true generating
 #' distribution and should not replace goodness-of-fit assessment, diagnostics,
-#' return-level uncertainty evaluation, or hydrological judgement.
+#' quantile uncertainty evaluation, or hydrological judgement.
 #'
 #' @param object A numeric vector or an `alea_fit` object.
 #' @param ... Additional arguments passed to methods.
 #'
 #' @return An object of class `alea_selection`.
+#'
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9, 67.2, 44.6)
+#' selection <- alea_select(x)
+#' selection
+#' as.data.frame(selection)
 #'
 #' @export
 alea_select <- function(object, ...) {
@@ -105,14 +112,14 @@ alea_select.alea_fit <- function(
 }
 
 #' @export
-print.alea_selection <- function(x, ...) {
+print.alea_selection <- function(x, digits = 4, ...) {
   cat("ALEA-R AI-assisted distribution-selection support\n")
   cat("Selection method:", x$selection_method, "\n")
   cat("Predicted distribution:", x$selected_distribution, "\n")
 
   if (!is.null(x$decision)) {
     cat("Decision strength:", x$decision$decision_strength[[1L]], "\n")
-    cat("Top1-top2 margin:", format(x$decision$top1_top2_margin[[1L]], digits = 4), "\n")
+    cat("Top1-top2 margin:", round(x$decision$top1_top2_margin[[1L]], digits), "\n")
   }
 
   if (!is.null(x$model_info)) {
@@ -123,8 +130,10 @@ print.alea_selection <- function(x, ...) {
   }
 
   if (!is.null(x$ranking) && nrow(x$ranking) > 0L) {
+    ranking <- as.data.frame(x)
+    ranking$probability <- round(ranking$probability, digits)
     cat("\nCandidate ranking:\n")
-    print(x$ranking, row.names = FALSE)
+    print.data.frame(ranking, row.names = FALSE)
   }
 
   if (!is.null(x$decision) && "interpretation" %in% names(x$decision)) {
@@ -139,12 +148,17 @@ print.alea_selection <- function(x, ...) {
     }
   }
 
+  cat("\nUse as.data.frame(x) for the full AI-selection ranking table.\n")
+
   invisible(x)
 }
 
 #' @export
 as.data.frame.alea_selection <- function(x, ...) {
-  as.data.frame(x$ranking, stringsAsFactors = FALSE)
+  out <- as.data.frame(x$ranking, stringsAsFactors = FALSE)
+  out <- out[order(out$rank, out$distribution), , drop = FALSE]
+  row.names(out) <- NULL
+  out
 }
 
 select_with_fads_ai_light <- function(
@@ -281,7 +295,7 @@ build_ai_light_ranking <- function(pred_tbl) {
     stringsAsFactors = FALSE
   )
 
-  out <- out[order(-out$probability), , drop = FALSE]
+  out <- out[order(-out$probability, out$distribution), , drop = FALSE]
   out$rank <- seq_len(nrow(out))
   out <- out[, c("distribution", "probability", "rank", "selected"), drop = FALSE]
   row.names(out) <- NULL

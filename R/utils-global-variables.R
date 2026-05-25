@@ -11,7 +11,7 @@ utils::globalVariables(c(
   "probability",
   "rank_value",
   "reject",
-  "return_level",
+  "quantile",
   "return_period_axis",
   "selected",
   "station",

@@ -11,6 +11,10 @@
 #'
 #' @return An object of class `alea_ai_model_info`.
 #'
+#' @examples
+#' info <- alea_ai_model_info(quiet = TRUE)
+#' info
+#'
 #' @export
 alea_ai_model_info <- function(
   model_path = NULL,

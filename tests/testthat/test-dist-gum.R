@@ -33,11 +33,11 @@ test_that("GUM rejects invalid parameter vectors", {
   expect_error(ALEA:::q_gum_internal(c(0, 0.5), c(xi = 0, alpha = 1)), "probability")
 })
 
-test_that("GUM return levels match quantiles", {
+test_that("GUM quantiles match quantiles", {
   para <- c(xi = 10, alpha = 2)
   return_period <- c(2, 10, 100)
 
-  rl <- ALEA:::return_level_gum_internal(return_period, para)
+  rl <- ALEA:::quantile_gum_internal(return_period, para)
   q <- ALEA:::q_gum_internal(1 - 1 / return_period, para)
 
   expect_equal(rl, q, tolerance = 1e-10)

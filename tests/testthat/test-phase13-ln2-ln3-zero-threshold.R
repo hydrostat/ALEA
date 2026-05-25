@@ -1,4 +1,4 @@
-test_that("Phase 13 LN2 return levels match LN3 zero-threshold convention", {
+test_that("Phase 13 LN2 quantiles match LN3 zero-threshold convention", {
   x <- c(
     42.1, 39.4, 51.7, 48.3, 55.2,
     60.1, 46.8, 53.9, 58.4, 62.7,
@@ -15,12 +15,12 @@ test_that("Phase 13 LN2 return levels match LN3 zero-threshold convention", {
     method = "lmom"
   )
   
-  rl <- alea_return_level(
+  rl <- alea_quantile(
     fit,
     return_period = return_period
   )
   
-  params <- coef(fit)
+  params <- coef(fit, type = "internal")
   
   mu <- unname(params[["mu"]])
   sigma <- unname(params[["sigma"]])
@@ -28,7 +28,7 @@ test_that("Phase 13 LN2 return levels match LN3 zero-threshold convention", {
   reference <- exp(mu + sigma * stats::qnorm(probability))
   
   expect_s3_class(fit, "alea_fit")
-  expect_s3_class(rl, "alea_return_level")
+  expect_s3_class(rl, "alea_quantile")
   
   expect_identical(
     as.character(rl$distribution),
@@ -59,12 +59,12 @@ test_that("Phase 13 LN2 return levels match LN3 zero-threshold convention", {
   expect_gt(sigma, 0)
   
   expect_equal(
-    rl$return_level,
+    rl$quantile,
     reference,
     tolerance = 1e-10,
     ignore_attr = TRUE
   )
   
-  expect_true(all(is.finite(rl$return_level)))
-  expect_true(all(diff(rl$return_level) > 0))
+  expect_true(all(is.finite(rl$quantile)))
+  expect_true(all(diff(rl$quantile) > 0))
 })

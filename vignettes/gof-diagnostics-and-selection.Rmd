@@ -31,7 +31,7 @@ These tools answer different questions:
 No single output should be interpreted in isolation. FADS_AI output is
  decision-support evidence, not proof of the true generating distribution.
 Final model selection should also consider hydrological judgement, sample
-quality, return-level uncertainty, and the purpose of the analysis.
+quality, quantile uncertainty, and the purpose of the analysis.
 
 # Example sample
 
@@ -149,7 +149,7 @@ plot(diagnostics, type = "p_value")
 
 Diagnostic warnings should trigger review. They do not automatically invalidate
 a fitted model. For example, a warning about sample size may indicate that
-return-level uncertainty should be interpreted more cautiously.
+quantile uncertainty should be interpreted more cautiously.
 
 # AI-assisted distribution selection
 
@@ -175,7 +175,7 @@ plot(selection)
 
 FADS_AI probabilities should be reported as model-based support, not as proof
 of the true distribution. The top-ranked family should be interpreted together
-with diagnostics, GOF behavior, return-level uncertainty, and hydrological
+with diagnostics, GOF behavior, quantile uncertainty, and hydrological
 knowledge.
 
 # Combining evidence
@@ -185,7 +185,7 @@ A cautious workflow is:
 1. Check diagnostics before interpreting model fits.
 2. Compare several candidate distributions with GOF statistics.
 3. Review FADS_AI support and the top1-top2 probability margin.
-4. Estimate return levels and uncertainty for plausible candidates.
+4. Estimate quantiles and uncertainty for plausible candidates.
 5. Use hydrological judgement before choosing a final model.
 
 The following compact table joins three types of evidence: AIC ranking,
@@ -208,16 +208,16 @@ This type of table is useful for reporting, but it should not be reduced to an
 automatic rule. Differences among candidate distributions can be small, and
 uncertainty may be large for high return periods.
 
-# Return-level uncertainty for plausible candidates
+# Quantile uncertainty for plausible candidates
 
-After narrowing candidate distributions, inspect return levels and uncertainty.
+After narrowing candidate distributions, inspect quantiles and uncertainty.
 The example below uses the reference fit selected above. In a full analysis,
 repeat this step for other plausible candidates.
 
-```{r return-level-ci}
+```{r quantile-ci}
 ci <- confint(
   reference_fit,
-  parm = "return_level",
+  parm = "quantile",
   return_period = c(10, 25, 50, 100),
   level = 0.95,
   method = "bootstrap",
@@ -228,7 +228,7 @@ ci <- confint(
 ci
 ```
 
-```{r plot-return-level-ci}
+```{r plot-quantile-ci}
 plot(ci)
 ```
 
@@ -242,7 +242,7 @@ When reporting results, prefer language such as:
 
 > The FADS_AI model assigned the highest support to one candidate family for
 > this sample. GOF statistics and diagnostics were reviewed together with
-> return-level uncertainty before selecting the final model.
+> quantile uncertainty before selecting the final model.
 
 Avoid statements such as:
 
@@ -250,7 +250,7 @@ Avoid statements such as:
 
 # Summary
 
-Goodness-of-fit statistics, diagnostics, AI-assisted selection, and return-level
+Goodness-of-fit statistics, diagnostics, AI-assisted selection, and quantile
 uncertainty are complementary. ALEA-R is designed to keep these outputs
 structured and reportable, while leaving the final modelling decision to the
 analyst.

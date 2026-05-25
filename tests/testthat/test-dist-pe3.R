@@ -45,12 +45,12 @@ test_that("PE3 L-moment fitting returns expected structure", {
   expect_true(fit$convergence$converged)
 })
 
-test_that("PE3 return levels match quantiles", {
+test_that("PE3 quantiles match quantiles", {
   para <- c(mu = 10, sigma = 2, gamma = 0.8)
   return_period <- c(2, 10, 100)
 
   expect_equal(
-    ALEA:::return_level_pe3_internal(return_period, para),
+    ALEA:::quantile_pe3_internal(return_period, para),
     ALEA:::q_pe3_internal(1 - 1 / return_period, para)
   )
 })

@@ -41,7 +41,7 @@ fit_ln2 <- alea_fit(
   method = "lmom"
 )
 
-rl_ln2 <- alea_return_level(
+rl_ln2 <- alea_quantile(
   fit_ln2,
   return_period = return_period
 )
@@ -67,7 +67,7 @@ sigma <- unname(params_ln2[["sigma"]])
 
 zeta_reference <- 0
 
-return_level_reference <- zeta_reference + exp(
+quantile_reference <- zeta_reference + exp(
   mu + sigma * stats::qnorm(probability)
 )
 
@@ -79,17 +79,17 @@ comparison <- data.frame(
   probability_alea = rl_ln2$probability,
   probability_reference = probability,
   zeta_reference = zeta_reference,
-  return_level_alea = rl_ln2$return_level,
-  return_level_reference = return_level_reference,
-  absolute_difference = abs(rl_ln2$return_level - return_level_reference),
+  quantile_alea = rl_ln2$quantile,
+  quantile_reference = quantile_reference,
+  absolute_difference = abs(rl_ln2$quantile - quantile_reference),
   tolerance = tolerance,
-  passed = abs(rl_ln2$return_level - return_level_reference) <= tolerance
+  passed = abs(rl_ln2$quantile - quantile_reference) <= tolerance
 )
 
 # ---- Validation checks -------------------------------------------------------
 
 stopifnot(inherits(fit_ln2, "alea_fit"))
-stopifnot(inherits(rl_ln2, "alea_return_level"))
+stopifnot(inherits(rl_ln2, "alea_quantile"))
 
 stopifnot(identical(as.character(rl_ln2$distribution), rep("ln2", length(return_period))))
 stopifnot(identical(as.character(rl_ln2$method), rep("lmom", length(return_period))))
@@ -106,8 +106,8 @@ stopifnot(all.equal(
 ))
 
 stopifnot(all(comparison$passed))
-stopifnot(all(is.finite(comparison$return_level_alea)))
-stopifnot(all(diff(comparison$return_level_alea) > 0))
+stopifnot(all(is.finite(comparison$quantile_alea)))
+stopifnot(all(diff(comparison$quantile_alea) > 0))
 
 # ---- Write reference output --------------------------------------------------
 

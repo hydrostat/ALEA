@@ -25,7 +25,7 @@ The workflow includes:
 
 - preparing an observed sample;
 - fitting a probability distribution;
-- estimating return levels;
+- estimating quantiles;
 - computing bootstrap confidence intervals;
 - assessing goodness-of-fit;
 - checking sample diagnostics;
@@ -83,36 +83,103 @@ The fitted object stores the original sample and fitted parameters. Downstream
 workflows use this object directly, avoiding repeated specification of the
 sample, distribution, and estimation method.
 
-# Return levels
 
-Return levels are estimated with `alea_return_level()`. The argument
+# Compare several models for one site
+
+Use `alea_fit()` when the analysis targets one distribution and one estimation
+method. Use `alea_compare()` when the analysis should evaluate several
+candidate distributions or several estimation methods for the same series.
+
+```{r compare-models}
+cmp <- alea_compare(
+  x,
+  distributions = c("gev", "gum", "pe3"),
+  methods = c("lmom", "mle")
+)
+
+cmp
+as.data.frame(cmp)
+```
+
+For convenience, `alea_fit()` also delegates to `alea_compare()` when more than
+one distribution or method is supplied.
+
+```{r fit-delegates-to-compare}
+cmp_from_fit <- alea_fit(
+  x,
+  distribution = c("gev", "gum", "pe3"),
+  method = c("lmom", "mle")
+)
+
+cmp_from_fit
+```
+
+Downstream workflows work directly with the comparison object. Parameter columns
+that are specific to one distribution family are aligned automatically.
+
+```{r compare-quantiles}
+compare_return_period <- c(10, 25, 50, 100)
+
+quantiles_compare <- alea_quantile(
+  cmp,
+  return_period = compare_return_period
+)
+
+quantiles_compare
+```
+
+```{r compare-gof}
+gof_compare <- alea_gof(cmp)
+gof_compare
+```
+
+The same bootstrap confidence-interval method can be applied to all successful
+models in the comparison object. The small `n_boot` below keeps vignette checks
+fast; applied analyses should use a larger value.
+
+```{r compare-ci}
+ci_compare <- confint(
+  cmp,
+  parm = "quantile",
+  return_period = compare_return_period,
+  method = "bootstrap",
+  n_boot = 20,
+  seed = 123
+)
+
+ci_compare
+```
+
+# Quantiles
+
+Quantiles are estimated with `alea_quantile()`. The argument
 `return_period` defines the return periods of interest.
 
-```{r return-levels}
+```{r quantiles}
 return_period <- c(2, 5, 10, 25, 50, 100)
 
-rl <- alea_return_level(
+fit_quantiles <- alea_quantile(
   fit,
   return_period = return_period
 )
 
-rl
+fit_quantiles
 ```
 
-The returned object is an `alea_return_level` data frame. It can be converted to
+The returned object is an `alea_quantile` data frame. It can be converted to
 a plain data frame when needed.
 
-```{r return-levels-data-frame}
-as.data.frame(rl)
+```{r quantiles-data-frame}
+as.data.frame(fit_quantiles)
 ```
 
 # Bootstrap confidence intervals
 
-Return-level confidence intervals are computed with the S3 `confint()` method
+Quantile confidence intervals are computed with the S3 `confint()` method
 for `alea_fit` objects.
 
 The initial implementation provides percentile bootstrap confidence intervals
-for return levels. Parameter confidence intervals, asymptotic return-level
+for quantiles. Parameter confidence intervals, asymptotic quantile
 intervals, and generic delta-method intervals are not implemented in the initial
 release.
 
@@ -121,9 +188,9 @@ fast. For applied analyses, use a larger value such as `n_boot = 500` or more,
 depending on the required precision and available computing time.
 
 ```{r bootstrap-ci}
-ci <- confint(
+quantile_ci <- confint(
   fit,
-  parm = "return_level",
+  parm = "quantile",
   return_period = return_period,
   level = 0.95,
   method = "bootstrap",
@@ -131,14 +198,14 @@ ci <- confint(
   seed = 123
 )
 
-ci
+quantile_ci
 ```
 
 The output records the requested number of bootstrap resamples and the number of
 successful and failed resamples.
 
 ```{r bootstrap-ci-data-frame}
-as.data.frame(ci)
+as.data.frame(quantile_ci)
 ```
 
 # Goodness-of-fit
@@ -175,7 +242,7 @@ diagnostics
 ```
 
 Diagnostic warnings do not automatically invalidate a fitted model. They should
-be reviewed together with goodness-of-fit results, return-level uncertainty, and
+be reviewed together with goodness-of-fit results, quantile uncertainty, and
 hydrological judgement.
 
 ```{r diagnostics-data-frame}
@@ -202,7 +269,7 @@ as.data.frame(selection)
 
 FADS_AI output should be interpreted as decision-support evidence for candidate
 distribution families. It is not proof of the true generating distribution and
-should not replace goodness-of-fit assessment, diagnostics, return-level
+should not replace goodness-of-fit assessment, diagnostics, quantile
 uncertainty evaluation, or hydrological judgement.
 
 # Plots
@@ -228,25 +295,25 @@ plot(fit, type = "qq")
 plot(fit, type = "pp")
 ```
 
-## Return-level plots
+## Quantile plots
 
-```{r plot-return-level-fit}
-plot(fit, type = "return_level", return_period = return_period)
+```{r plot-quantile-fit}
+plot(fit, type = "quantile", return_period = return_period)
 ```
 
-```{r plot-return-level-object}
-plot(rl)
+```{r plot-quantile-object}
+plot(fit_quantiles)
 ```
 
-```{r plot-return-level-ci}
-plot(ci)
+```{r plot-quantile-ci}
+plot(quantile_ci)
 ```
 
-Return-level plots use a Gumbel return-period axis by default. The scale can be
+Quantile plots use a Gumbel return-period axis by default. The scale can be
 changed with `return_period_scale = "log"` or `return_period_scale = "linear"`.
 
-```{r plot-return-level-log-scale}
-plot(rl, return_period_scale = "log")
+```{r plot-quantile-log-scale}
+plot(fit_quantiles, return_period_scale = "log")
 ```
 
 ## Goodness-of-fit and diagnostics plots
@@ -274,11 +341,11 @@ plot(selection)
 Plot objects can be saved with `alea_save_plot()`.
 
 ```{r save-plot, eval = FALSE}
-p <- plot(fit, type = "return_level", return_period = return_period)
+p <- plot(fit, type = "quantile", return_period = return_period)
 
 alea_save_plot(
   p,
-  filename = "single_site_return_level.png",
+  filename = "single_site_quantile.png",
   width = 7,
   height = 5,
   dpi = 300
@@ -288,7 +355,7 @@ alea_save_plot(
 Data-frame-like outputs can be exported with `alea_export()`.
 
 ```{r export-tables, eval = FALSE}
-alea_export(rl, path = "single_site_return_levels.csv")
+alea_export(fit_quantiles, path = "single_site_quantiles.csv")
 alea_export(as.data.frame(gof), path = "single_site_gof.csv")
 alea_export(as.data.frame(diagnostics), path = "single_site_diagnostics.csv")
 ```
@@ -299,8 +366,8 @@ A single-site frequency analysis should not rely on one diagnostic or one model
 selection criterion alone. In practice, the fitted distribution should be
 reviewed together with:
 
-- the fitted density, CDF, Q-Q, P-P, and return-level plots;
-- return-level uncertainty;
+- the fitted density, CDF, Q-Q, P-P, and quantile plots;
+- quantile uncertainty;
 - goodness-of-fit statistics and information criteria;
 - sample diagnostics;
 - AI-assisted distribution-selection support;

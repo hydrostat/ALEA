@@ -6,7 +6,7 @@
 ALEA-R is an R package for hydrological frequency analysis.
 
 It provides tools for exploratory summaries, probability distribution
-fitting, return-level estimation, bootstrap confidence intervals,
+fitting, quantile estimation, bootstrap confidence intervals,
 goodness-of-fit assessment, sample diagnostics, AI-assisted
 distribution-selection support, batch analysis, publication-ready plots,
 and export helpers.
@@ -72,8 +72,8 @@ ALEA-R supports:
 - exploratory summaries for hydrological samples;
 - fitting of probability distributions used in the FADS_AI selection
   study;
-- return-level estimation;
-- percentile bootstrap confidence intervals for return levels;
+- quantile estimation;
+- percentile bootstrap confidence intervals for quantiles;
 - goodness-of-fit statistics and information criteria;
 - sample diagnostics for data-quality and frequency-analysis
   assumptions;
@@ -117,10 +117,61 @@ fit
 coef(fit)
 ```
 
-## Return levels
+
+## Single-site model comparison
+
+Use `alea_fit()` for one distribution-method model, `alea_compare()` for
+several models fitted to one hydrological series, and `alea_batch_fit()`
+for several stations or sites.
 
 ``` r
-rl <- alea_return_level(
+cmp <- alea_compare(
+  x,
+  distributions = c("gev", "gum", "pe3"),
+  methods = c("lmom", "mle")
+)
+
+cmp
+as.data.frame(cmp)
+coef(cmp)
+```
+
+For convenience, `alea_fit()` also returns an `alea_compare` object when
+more than one distribution or method is supplied:
+
+``` r
+cmp <- alea_fit(
+  x,
+  distribution = c("gev", "gum", "pe3"),
+  method = c("lmom", "mle")
+)
+```
+
+Downstream workflows combine successful models automatically and align
+distribution-specific parameter columns, so users do not need to bind
+heterogeneous tables manually.
+
+``` r
+rl <- alea_quantile(cmp, return_period = c(10, 25, 50, 100))
+gof <- alea_gof(cmp)
+
+ci <- confint(
+  cmp,
+  parm = "quantile",
+  return_period = c(10, 25, 50, 100),
+  method = "bootstrap",
+  n_boot = 500,
+  seed = 123
+)
+
+plot(rl)
+plot(ci)
+```
+
+## Quantiles
+
+``` r
+rl <- alea_quantile(
   fit,
   return_period = c(10, 25, 50, 100)
 )
@@ -134,7 +185,7 @@ plot(rl)
 ``` r
 ci <- confint(
   fit,
-  parm = "return_level",
+  parm = "quantile",
   return_period = c(10, 25, 50, 100),
   level = 0.95,
   method = "bootstrap",
@@ -147,8 +198,8 @@ plot(ci)
 ```
 
 The initial implementation provides percentile bootstrap confidence
-intervals for return levels. Parameter confidence intervals, asymptotic
-return-level intervals, and generic delta-method intervals are not
+intervals for quantiles. Parameter confidence intervals, asymptotic
+quantile intervals, and generic delta-method intervals are not
 implemented in the initial release.
 
 ## Goodness-of-fit and diagnostics
@@ -187,7 +238,7 @@ bundled FADS_AI lightweight operational application model.
 FADS_AI output should be interpreted as model-based decision-support
 evidence for candidate distribution families. It is not proof of the
 true generating distribution and should not replace goodness-of-fit
-assessment, diagnostics, return-level uncertainty evaluation, or
+assessment, diagnostics, quantile uncertainty evaluation, or
 hydrological judgement.
 
 ## Batch analysis
@@ -209,14 +260,14 @@ batch <- alea_batch_fit(
 alea_results(batch, "stations")
 alea_results(batch, "fits")
 alea_results(batch, "selected_models")
-alea_results(batch, "return_levels")
+alea_results(batch, "quantiles")
 alea_results(batch, "gof")
 alea_results(batch, "diagnostics")
 alea_results(batch, "errors")
 ```
 
 Batch workflows use structured error capture. A failure for one station,
-distribution, method, return-level calculation, goodness-of-fit
+distribution, method, quantile calculation, goodness-of-fit
 calculation, diagnostic calculation, or selection step does not stop the
 full workflow.
 
@@ -225,11 +276,11 @@ full workflow.
 All plot methods return `ggplot` objects.
 
 ``` r
-p <- plot(fit, type = "return_level")
+p <- plot(fit, type = "quantile")
 
 alea_save_plot(
   p,
-  filename = "return_level_plot.png",
+  filename = "quantile_plot.png",
   width = 7,
   height = 5,
   dpi = 300
@@ -239,7 +290,7 @@ alea_save_plot(
 ALEA-R can also export data frames and flat batch result tables:
 
 ``` r
-alea_export(rl, path = "return_levels.csv")
+alea_export(rl, path = "quantiles.csv")
 alea_export(batch, path = "batch_results", type = "all")
 ```
 
@@ -253,7 +304,7 @@ common frequency-analysis workflows:
 
 - single-site frequency analysis;
 - comparison of candidate distributions;
-- return levels and bootstrap confidence intervals;
+- quantiles and bootstrap confidence intervals;
 - goodness-of-fit, diagnostics, and AI-assisted selection;
 - small batch analysis;
 - plots and exports.
@@ -299,7 +350,7 @@ The initial implementation does not include:
 - calibrated goodness-of-fit p-values;
 - chi-square goodness-of-fit tests;
 - parameter confidence intervals;
-- asymptotic or delta-method return-level confidence intervals;
+- asymptotic or delta-method quantile confidence intervals;
 - HidroWeb data access in the core package.
 
 ## Citation

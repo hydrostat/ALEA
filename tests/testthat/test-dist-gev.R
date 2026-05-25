@@ -40,12 +40,12 @@ test_that("GEV rejects invalid parameter vectors", {
   expect_error(ALEA:::p_gev_internal(1, c(location = 0, scale = 1, shape = 0)), "names")
 })
 
-test_that("GEV return levels match quantiles", {
+test_that("GEV quantiles match quantiles", {
   para <- c(xi = 10, alpha = 2, k = -0.1)
   return_period <- c(2, 10, 100)
 
   expect_equal(
-    ALEA:::return_level_gev_internal(return_period, para),
+    ALEA:::quantile_gev_internal(return_period, para),
     ALEA:::q_gev_internal(1 - 1 / return_period, para)
   )
 })

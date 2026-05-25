@@ -6,31 +6,44 @@
 #'
 #' @param x An object of class `alea_fit`.
 #' @param type Character scalar. Plot type. One of `"density"`, `"cdf"`,
-#'   `"qq"`, `"pp"`, or `"return_level"`.
+#'   `"qq"`, `"pp"`, or `"quantile"`.
 #' @param return_period Numeric vector, `NULL`, or `NA`. Return periods used as
-#'   x-axis ticks when `type = "return_level"`. If `NULL` or `NA`, ticks are
+#'   x-axis ticks when `type = "quantile"`. If `NULL` or `NA`, ticks are
 #'   chosen automatically from standard hydrological return periods.
 #' @param return_period_scale Character scalar. Return-period axis scale when
-#'   `type = "return_level"`. One of `"gumbel"`, `"log"`, or `"linear"`.
+#'   `type = "quantile"`. One of `"gumbel"`, `"log"`, or `"linear"`.
 #' @param return_period_grid_n Integer scalar. Number of internal grid points
-#'   used to draw a smooth fitted return-level curve.
-#' @param plotting_position_a Numeric scalar. Plotting-position parameter
-#'   passed to `stats::ppoints()` for observed return-level points.
+#'   used to draw a smooth fitted quantile curve.
+#' @param plot_observed Logical scalar. If `TRUE`, observed plotting-position
+#'   points are added to quantile plots.
+#' @param plotting_position_a Numeric scalar. Plotting-position parameter `a`
+#'   used for observed quantile points, with plotting positions
+#'   `p_i = (i - a) / (n + 1 - 2 * a)` and empirical return periods
+#'   `T_i = 1 / (1 - p_i)`.
 #' @param n_grid Integer scalar. Number of grid points for fitted density and
 #'   CDF curves.
 #' @param bins Integer scalar. Number of histogram bins for `type = "density"`.
-#' @param ... Additional arguments passed to methods. Currently unused.
+#' @param ... Additional arguments passed to methods.
 #'
 #' @return A `ggplot` object.
 #'
 #' @method plot alea_fit
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9)
+#' fit <- alea_fit(x, distribution = "gev", method = "lmom")
+#' plot(fit, type = "density")
+#' plot(fit, type = "quantile")
+#' plot(fit, type = "quantile", plot_observed = FALSE)
+#'
 #' @export
 plot.alea_fit <- function(
     x,
-    type = c("density", "cdf", "qq", "pp", "return_level"),
+    type = c("density", "cdf", "qq", "pp", "quantile"),
     return_period = NULL,
     return_period_scale = c("gumbel", "log", "linear"),
     return_period_grid_n = 200,
+    plot_observed = TRUE,
     plotting_position_a = 0.44,
     n_grid = 200,
     bins = 30,
@@ -54,6 +67,7 @@ plot.alea_fit <- function(
     n_grid = n_grid,
     bins = bins,
     return_period_grid_n = return_period_grid_n,
+    plot_observed = plot_observed,
     plotting_position_a = plotting_position_a
   )
   
@@ -96,12 +110,17 @@ plot.alea_fit <- function(
     ))
   }
   
-  if (type == "return_level") {
-    return(plot_alea_fit_return_level(
+  if (type == "quantile") {
+    type <- "quantile"
+  }
+
+  if (type == "quantile") {
+    return(plot_alea_fit_quantile(
       x = x,
       return_period = return_period,
       return_period_scale = return_period_scale,
       return_period_grid_n = return_period_grid_n,
+      plot_observed = plot_observed,
       plotting_position_a = plotting_position_a
     ))
   }
@@ -114,6 +133,7 @@ validate_alea_fit_plot_input <- function(
     n_grid,
     bins,
     return_period_grid_n,
+    plot_observed,
     plotting_position_a
 ) {
   if (!is.numeric(n_grid) || length(n_grid) != 1L || !is.finite(n_grid)) {
@@ -144,6 +164,11 @@ validate_alea_fit_plot_input <- function(
     stop("`return_period_grid_n` must be at least 20.", call. = FALSE)
   }
   
+
+  if (!is.logical(plot_observed) || length(plot_observed) != 1L || is.na(plot_observed)) {
+    stop("`plot_observed` must be `TRUE` or `FALSE`.", call. = FALSE)
+  }
+
   if (
     !is.numeric(plotting_position_a) ||
     length(plotting_position_a) != 1L ||
@@ -393,18 +418,19 @@ plot_alea_fit_pp <- function(data, distribution, method, parameters) {
 }
 
 
-plot_alea_fit_return_level <- function(
+plot_alea_fit_quantile <- function(
     x,
     return_period = NULL,
     return_period_scale = c("gumbel", "log", "linear"),
     return_period_grid_n = 200,
+    plot_observed = TRUE,
     plotting_position_a = 0.44
 ) {
   return_period_scale <- match.arg(return_period_scale)
   
   data <- validate_fit_plot_data(x)
   
-  observed <- make_observed_return_level_data(
+  observed <- make_observed_quantile_data(
     data = data,
     plotting_position_a = plotting_position_a
   )
@@ -417,7 +443,7 @@ plot_alea_fit_return_level <- function(
   
   max_requested_return_period <- max(return_period_ticks, na.rm = TRUE)
   
-  observed <- filter_observed_return_levels(
+  observed <- filter_observed_quantiles(
     observed = observed,
     max_return_period = max_requested_return_period
   )
@@ -427,7 +453,7 @@ plot_alea_fit_return_level <- function(
     n_grid = return_period_grid_n
   )
   
-  model <- alea_return_level(
+  model <- alea_quantile(
     object = x,
     return_period = model_return_period
   )
@@ -449,20 +475,26 @@ plot_alea_fit_return_level <- function(
     scale = return_period_scale
   )
   
-  ggplot2::ggplot() +
-    ggplot2::geom_point(
-      data = observed,
-      ggplot2::aes(x = return_period_axis, y = return_level),
-      shape = 21,
-      size = 1.0,
-      stroke = 0.6,
-      color = alea_plot_color("observed"),
-      fill = "white",
-      alpha = 0.9
-    ) +
+  p <- ggplot2::ggplot()
+
+  if (isTRUE(plot_observed)) {
+    p <- p +
+      ggplot2::geom_point(
+        data = observed,
+        ggplot2::aes(x = return_period_axis, y = quantile),
+        shape = 21,
+        size = 1.0,
+        stroke = 0.6,
+        color = alea_plot_color("observed"),
+        fill = "white",
+        alpha = 0.9
+      )
+  }
+
+  p +
     ggplot2::geom_line(
       data = model,
-      ggplot2::aes(x = return_period_axis, y = return_level),
+      ggplot2::aes(x = return_period_axis, y = quantile),
       linewidth = 0.5,
       color = alea_plot_color("fitted")
     ) +
@@ -471,7 +503,7 @@ plot_alea_fit_return_level <- function(
       labels = return_period_ticks
     ) +
     ggplot2::labs(
-      title = "Return-level plot",
+      title = "Quantile plot",
       subtitle = alea_plot_model_subtitle(x$distribution, x$method),
       x = "Return period",
       y = "Quantile"
@@ -681,7 +713,7 @@ transform_return_period_axis <- function(
 }
 
 
-make_observed_return_level_data <- function(data, plotting_position_a = 0.44) {
+make_observed_quantile_data <- function(data, plotting_position_a = 0.44) {
   data <- sort(data)
   
   probability <- stats::ppoints(
@@ -693,7 +725,7 @@ make_observed_return_level_data <- function(data, plotting_position_a = 0.44) {
   
   data.frame(
     return_period = return_period,
-    return_level = data
+    quantile = data
   )
 }
 
@@ -717,7 +749,7 @@ make_model_return_period_grid <- function(
 }
 
 
-filter_observed_return_levels <- function(observed, max_return_period) {
+filter_observed_quantiles <- function(observed, max_return_period) {
   keep <- observed$return_period <= max_return_period
   
   if (any(!keep)) {

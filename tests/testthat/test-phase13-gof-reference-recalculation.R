@@ -17,7 +17,7 @@ test_that("Phase 13 GOF statistics match direct Gumbel recalculation", {
     statistics = c("ks", "cvm", "ad", "loglik", "aic", "bic")
   )
   
-  params <- coef(fit)
+  params <- coef(fit, type = "internal")
   
   xi <- unname(params[["xi"]])
   alpha <- unname(params[["alpha"]])

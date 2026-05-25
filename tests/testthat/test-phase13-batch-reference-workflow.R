@@ -44,7 +44,7 @@ test_that("Phase 13 batch reference workflow returns stable integrated outputs",
   
   stations <- alea_results(batch, "stations")
   fits <- alea_results(batch, "fits")
-  return_levels <- alea_results(batch, "return_levels")
+  quantiles <- alea_results(batch, "quantiles")
   gof <- alea_results(batch, "gof")
   diagnostics <- alea_results(batch, "diagnostics")
   selection <- alea_results(batch, "selection")
@@ -55,7 +55,7 @@ test_that("Phase 13 batch reference workflow returns stable integrated outputs",
   
   expect_true(is.data.frame(stations))
   expect_true(is.data.frame(fits))
-  expect_true(is.data.frame(return_levels))
+  expect_true(is.data.frame(quantiles))
   expect_true(is.data.frame(gof))
   expect_true(is.data.frame(diagnostics))
   expect_true(is.data.frame(selection))
@@ -73,9 +73,9 @@ test_that("Phase 13 batch reference workflow returns stable integrated outputs",
   expect_setequal(fits$method, "lmom")
   
   # 3 stations x 2 fitted models x 3 return periods
-  expect_equal(nrow(return_levels), 18)
-  expect_setequal(return_levels$return_period, return_period)
-  expect_true(all(is.finite(return_levels$return_level)))
+  expect_equal(nrow(quantiles), 18)
+  expect_setequal(quantiles$return_period, return_period)
+  expect_true(all(is.finite(quantiles$quantile)))
   
   # 3 stations x 2 fitted models x 6 GOF statistics
   expect_equal(nrow(gof), 36)

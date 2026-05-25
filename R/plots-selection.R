@@ -5,11 +5,17 @@
 #' Produces a probability ranking plot from an `alea_selection` object.
 #'
 #' @param x An object of class `alea_selection`.
-#' @param ... Additional arguments passed to methods. Currently unused.
+#' @param ... Additional arguments passed to methods.
 #'
 #' @return A `ggplot` object.
 #'
 #' @method plot alea_selection
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9, 67.2, 44.6)
+#' selection <- alea_select(x)
+#' plot(selection)
+#'
 #' @export
 plot.alea_selection <- function(x, ...) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {

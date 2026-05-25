@@ -1,13 +1,15 @@
-# ALEA NEWS
+# ALEA 0.2.0
 
-# ALEA 0.1.1
+## Phase 17 — Multi-model single-site workflow
 
-Public GitHub release of ALEA-R for applied hydrological frequency-analysis
-workflows, teaching, validation, and reproducible examples.
-
-This release consolidates post-0.1.0 stabilization, external validation cases,
-user-facing teaching examples, and CRAN-readiness cleanup after the first
-development pre-release.
+- Added `alea_compare()` as the user-facing workflow for fitting several supported distribution-method combinations to one hydrological series.
+- Updated `alea_fit()` so one distribution-method combination still returns `alea_fit`, while vector-valued `distribution` or `method` inputs return `alea_compare`.
+- Added S3 methods for `alea_compare`: `print()`, `summary()`, `as.data.frame()`, `coef()`, `alea_quantile()`, `alea_gof()`, `confint()`, and `plot()`.
+- Added bootstrap quantile confidence intervals across all successfully fitted models in an `alea_compare` object.
+- Added automatic alignment of distribution-specific parameter columns in combined quantile, confidence-interval, and coefficient outputs.
+- Added structured error capture so one failed distribution-method fit does not stop the single-site multi-model workflow.
+- Preserved the existing one-model `alea_fit()` behavior for scalar `distribution` and `method` inputs.
+- Kept the statistical scope unchanged: supported distributions remain `gev`, `gpa`, `pe3`, `ln2`, `ln3`, and `gum`; LP3, Portuguese aliases, calibrated GOF p-values, chi-square GOF tests, new confidence-interval methods, and HidroWeb access remain outside this release.
 
 ## Highlights
 
@@ -58,7 +60,7 @@ hydrological frequency analysis.
 
 - Added a compact, workflow-oriented public API for hydrological frequency
   analysis.
-- Added S3 user-facing objects for fitted models, return levels,
+- Added S3 user-facing objects for fitted models, quantiles,
   confidence intervals, goodness-of-fit results, diagnostics, AI-assisted
   selection, and batch analysis.
 - Added support for the initial six candidate distributions:
@@ -81,20 +83,20 @@ hydrological frequency analysis.
 - Added support for L-moment, method-of-moments, and maximum-likelihood fitting
   where implemented for the supported distributions.
 - Added internal density, distribution, quantile, random-generation,
-  parameter-validation, fitting, and return-level helpers for all six
+  parameter-validation, fitting, and quantile helpers for all six
   supported distributions.
 - Added `print.alea_fit()` and `coef.alea_fit()` methods.
 
-## Return levels and confidence intervals
+## Quantiles and confidence intervals
 
-- Added `alea_return_level()` and `alea_return_level.alea_fit()`.
-- Added the `alea_return_level` S3 data-frame output.
-- Added `print.alea_return_level()` and `as.data.frame.alea_return_level()`.
-- Added `confint.alea_fit()` for return-level confidence intervals.
-- Added percentile bootstrap confidence intervals for return levels.
-- Added the `alea_return_level_ci` S3 data-frame output.
-- Added `print.alea_return_level_ci()` and
-  `as.data.frame.alea_return_level_ci()`.
+- Added `alea_quantile()` and `alea_quantile.alea_fit()`.
+- Added the `alea_quantile` S3 data-frame output.
+- Added `print.alea_quantile()` and `as.data.frame.alea_quantile()`.
+- Added `confint.alea_fit()` for quantile confidence intervals.
+- Added percentile bootstrap confidence intervals for quantiles.
+- Added the `alea_quantile_ci` S3 data-frame output.
+- Added `print.alea_quantile_ci()` and
+  `as.data.frame.alea_quantile_ci()`.
 
 ## Goodness-of-fit and diagnostics
 
@@ -155,13 +157,13 @@ hydrological frequency analysis.
 - Added `alea_results()` as the official extractor for `alea_batch` objects.
 - Added the `alea_batch` S3 output.
 - Added `print.alea_batch()` and `as.data.frame.alea_batch()`.
-- Added station-level metadata, fit-summary tables, optional return-level
+- Added station-level metadata, fit-summary tables, optional quantile
   tables, optional goodness-of-fit tables, optional diagnostics tables,
   station-level AI-selection summaries, and selected-model summaries.
 - Stored successful fitted models in `fit_objects`.
 - Stored successful AI-selection objects in `selection_objects`.
 - Added structured error capture so failures for one station, distribution,
-  method, return-level calculation, goodness-of-fit calculation, diagnostic
+  method, quantile calculation, goodness-of-fit calculation, diagnostic
   calculation, or selection step do not stop the full batch workflow.
 - Ensured empty batch error outputs retain stable columns:
   `station`, `step`, `distribution`, `method`, `message`, and `class`.
@@ -172,20 +174,20 @@ hydrological frequency analysis.
 
 - Added ggplot-based S3 plot methods:
   - `plot.alea_fit()`;
-  - `plot.alea_return_level()`;
-  - `plot.alea_return_level_ci()`;
+  - `plot.alea_quantile()`;
+  - `plot.alea_quantile_ci()`;
   - `plot.alea_gof()`;
   - `plot.alea_diagnostics()`;
   - `plot.alea_selection()`;
   - `plot.alea_batch()`.
-- Added fitted density, fitted CDF, Q-Q, P-P, and return-level plots for
+- Added fitted density, fitted CDF, Q-Q, P-P, and quantile plots for
   `alea_fit` objects.
-- Added return-level plots for point estimates and bootstrap confidence
+- Added quantile plots for point estimates and bootstrap confidence
   intervals.
 - Added goodness-of-fit statistic and rank plots.
 - Added diagnostics status and p-value plots.
 - Added AI-selection probability-ranking plots.
-- Added batch plots for selected models, return levels, goodness-of-fit
+- Added batch plots for selected models, quantiles, goodness-of-fit
   summaries, and diagnostics summaries.
 - Added the shared ALEA plotting theme through `alea_plot_theme()`.
 - Finalized publication-oriented visual defaults after manual visual review.
@@ -214,8 +216,8 @@ hydrological frequency analysis.
 - LP3 distribution support.
 - Portuguese API aliases.
 - Parameter confidence intervals.
-- Asymptotic return-level confidence intervals.
-- Generic delta-method return-level confidence intervals.
+- Asymptotic quantile confidence intervals.
+- Generic delta-method quantile confidence intervals.
 - Calibrated goodness-of-fit p-values.
 - Chi-square goodness-of-fit tests.
 - HidroWeb access in the core package.

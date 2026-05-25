@@ -6,10 +6,12 @@
 \usage{
 \method{plot}{alea_batch}(
   x,
-  type = c("selected_models", "return_levels", "gof", "diagnostics"),
+  type = c("selected_models", "quantiles", "gof", "diagnostics"),
   statistic = "aic",
   diagnostic = NULL,
   return_period_scale = c("gumbel", "log", "linear"),
+  plot_observed = TRUE,
+  plotting_position_a = 0.44,
   ...
 )
 }
@@ -17,7 +19,7 @@
 \item{x}{An object of class \code{alea_batch}.}
 
 \item{type}{Character scalar. Plot type. One of \code{"selected_models"},
-\code{"return_levels"}, \code{"gof"}, or \code{"diagnostics"}.}
+\code{"quantiles"}, \code{"gof"}, or \code{"diagnostics"}.}
 
 \item{statistic}{Character scalar. Goodness-of-fit statistic used when
 \code{type = "gof"}.}
@@ -27,13 +29,38 @@
 status.}
 
 \item{return_period_scale}{Character scalar. Return-period axis scale when
-\code{type = "return_levels"}. One of \code{"gumbel"}, \code{"log"}, or \code{"linear"}.}
+\code{type = "quantiles"}. One of \code{"gumbel"}, \code{"log"}, or \code{"linear"}.}
 
-\item{...}{Additional arguments passed to methods. Currently unused.}
+\item{plot_observed}{Logical scalar. If \code{TRUE}, observed plotting-position
+points are added to batch quantile plots.}
+
+\item{plotting_position_a}{Numeric scalar. Plotting-position parameter \code{a}
+used for observed quantile points, with plotting positions
+\code{p_i = (i - a) / (n + 1 - 2 * a)} and empirical return periods
+\code{T_i = 1 / (1 - p_i)}.}
+
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A \code{ggplot} object.
 }
 \description{
 Produces summary plots from an \code{alea_batch} object.
+}
+\examples{
+data <- data.frame(
+  station = rep(c("A", "B"), each = 10),
+  value = c(42, 39, 51, 47, 62, 55, 50, 58, 60, 46,
+            50, 47, 61, 56, 75, 66, 60, 70, 72, 55)
+)
+batch <- alea_batch_fit(
+  data, station = "station", value = "value",
+  distributions = c("gev", "gum"),
+  methods = "lmom",
+  return_period = c(10, 25),
+  gof = TRUE
+)
+plot(batch, type = "quantiles")
+plot(batch, type = "quantiles", plot_observed = FALSE)
+
 }

@@ -1,239 +1,148 @@
-# ALEA-R example 06
-# Plots and exports workflow
+# ALEA-R example 06: Plots and exports
 #
-# Purpose:
-#   This teaching script demonstrates how to create ALEA-R plots and export
-#   plots and tables using the public export helpers.
-#
-# Data:
-#   Public annual maximum mean daily flow data for the Paraopeba River at
-#   P. N. Paraopeba, Brazil.
-#
-# Notes:
-#   - The script writes files to examples/output/.
-#   - Output files are teaching artifacts and can be deleted safely.
-#   - This script creates output directories before exporting files.
-#   - Run this script from the ALEA package root directory:
-#       source("examples/06_plots_and_exports_workflow.R")
+# This script demonstrates ggplot-returning plot methods and export helpers.
+# Generated outputs are written to examples/output/ and are not intended to be
+# versioned in the repository.
+
+suppressPackageStartupMessages({
+  library(ALEA)
+})
 
 cat("\n============================================================\n")
-cat("ALEA-R example 06: Plots and exports workflow\n")
-cat("============================================================\n\n")
+cat("Example 06: Plots and exports\n")
+cat("============================================================\n")
 
-cat("--- 1. Loading package and data ---\n")
-library(ALEA)
+data_dir <- if (dir.exists("examples/data")) "examples/data" else "data"
+output_dir <- if (dir.exists("examples")) "examples/output" else "output"
+plots_dir <- file.path(output_dir, "example06_plots")
+batch_tables_dir <- file.path(output_dir, "example06_batch_tables")
 
-data_file <- file.path("examples", "data", "paraopeba_annual_max_flow.csv")
-output_dir <- file.path("examples", "output")
-multi_plot_dir <- file.path(output_dir, "example06_plots")
-batch_export_dir <- file.path(output_dir, "example06_batch_tables")
-
-if (!file.exists(data_file)) {
-  stop(
-    "Data file not found: ", data_file, "\n",
-    "Please run this script from the ALEA package root directory."
-  )
-}
-
-# Create all output directories before calling export helpers.
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-dir.create(multi_plot_dir, recursive = TRUE, showWarnings = FALSE)
-dir.create(batch_export_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(plots_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(batch_tables_dir, recursive = TRUE, showWarnings = FALSE)
 
-paraopeba_flow <- read.csv(data_file, stringsAsFactors = FALSE)
-
-if (!"flow_m3s" %in% names(paraopeba_flow)) {
-  stop("Expected column 'flow_m3s' was not found in the data file.")
+remove_if_exists <- function(path) {
+  if (file.exists(path)) {
+    unlink(path, recursive = TRUE, force = TRUE)
+  }
 }
 
-x <- paraopeba_flow$flow_m3s
-x <- x[is.finite(x)]
+flow_file <- file.path(data_dir, "paraopeba_annual_max_flow.csv")
+flow_data <- read.csv(flow_file)
+x <- flow_data$flow_m3s
 
-cat("Finite observations:", length(x), "\n")
-cat("Output directory:", output_dir, "\n")
-cat("Multi-plot directory:", multi_plot_dir, "\n")
-cat("Batch export directory:", batch_export_dir, "\n\n")
-
-cat("--- 2. Fitting a model and computing results ---\n")
-
-fit_gev <- alea_fit(
-  x,
-  distribution = "gev",
-  method = "lmom"
+fit <- alea_fit(x, distribution = "gev", method = "lmom")
+quantiles <- alea_quantile(fit, return_period = c(2, 5, 10, 25, 50, 100, 200))
+ci <- confint(
+  fit,
+  parm = "quantile",
+  return_period = c(10, 25, 50, 100),
+  method = "bootstrap",
+  n_boot = 50,
+  seed = 123
 )
-
-return_periods <- c(2, 5, 10, 25, 50, 100, 200)
-
-return_levels <- alea_return_level(
-  fit_gev,
-  return_period = return_periods
-)
-
-gof_gev <- alea_gof(fit_gev, statistics = "all")
-diagnostics_gev <- alea_diagnostics(fit_gev, diagnostics = "all")
+gof <- alea_gof(fit)
+diag <- alea_diagnostics(fit)
 selection <- alea_select(x)
 
-cat("Fitted model:\n")
-print(fit_gev)
-cat("\n")
-
-cat("--- 3. Creating ggplot objects ---\n")
-
-p_density <- plot(fit_gev, type = "density")
-p_cdf <- plot(fit_gev, type = "cdf")
-p_qq <- plot(fit_gev, type = "qq")
-p_pp <- plot(fit_gev, type = "pp")
-p_return <- plot(
-  fit_gev,
-  type = "return_level",
-  return_period = return_periods
-)
-p_gof <- plot(gof_gev, type = "statistic")
-p_diagnostics <- plot(diagnostics_gev, type = "status")
-p_selection <- plot(selection)
-
-cat("Printing selected plots...\n")
-print(p_density)
-print(p_return)
-print(p_selection)
-
+cat("\nCreate plot objects\n")
 plots <- list(
-  density = p_density,
-  cdf = p_cdf,
-  qq = p_qq,
-  pp = p_pp,
-  return_level = p_return,
-  gof = p_gof,
-  diagnostics = p_diagnostics,
-  selection = p_selection
+  density = plot(fit, type = "density"),
+  cdf = plot(fit, type = "cdf"),
+  qq = plot(fit, type = "qq"),
+  pp = plot(fit, type = "pp"),
+  quantile = plot(fit, type = "quantile"),
+  quantile_no_observed = plot(fit, type = "quantile", plot_observed = FALSE),
+  quantile_table_plot = plot(quantiles),
+  quantile_ci = plot(ci),
+  gof = plot(gof, type = "statistic"),
+  diagnostics = plot(diag, type = "status"),
+  selection = plot(selection)
 )
 
-cat("\nCreated plot objects:\n")
-print(names(plots))
-cat("\n")
+print(plots$quantile)
+print(plots$quantile_no_observed)
+print(plots$quantile_ci)
 
-cat("--- 4. Exporting one plot ---\n")
-
-single_plot_file <- file.path(output_dir, "example06_return_level.png")
-
-# alea_save_plot() does not use an overwrite argument in the current API.
-# If the file already exists, remove it explicitly for this teaching example.
-if (file.exists(single_plot_file)) {
-  file.remove(single_plot_file)
-}
-
+cat("\nSave one plot\n")
+single_plot_file <- file.path(output_dir, "example06_quantile.png")
+remove_if_exists(single_plot_file)
 alea_save_plot(
-  p_return,
+  plots$quantile,
   filename = single_plot_file,
   width = 7,
   height = 5,
   units = "in",
   dpi = 300
 )
+print(single_plot_file)
 
-cat("Saved:", single_plot_file, "\n\n")
-
-cat("--- 5. Exporting multiple plots ---\n")
-
-# alea_save_plots() does not use an overwrite argument in the current API.
-# Remove existing files with the same teaching prefix before exporting.
-existing_plot_files <- list.files(
-  multi_plot_dir,
-  pattern = "^paraopeba_.*\\.png$",
-  full.names = TRUE
-)
-
-if (length(existing_plot_files) > 0L) {
-  file.remove(existing_plot_files)
-}
-
+cat("\nSave multiple plots\n")
+remove_if_exists(plots_dir)
+dir.create(plots_dir, recursive = TRUE, showWarnings = FALSE)
 alea_save_plots(
   plots,
-  directory = multi_plot_dir,
-  prefix = "paraopeba",
+  directory = plots_dir,
+  prefix = "example06",
   extension = "png",
   width = 7,
   height = 5,
   units = "in",
-  dpi = 300,
-  overwrite = TRUE
+  dpi = 300
+)
+print(list.files(plots_dir, full.names = TRUE))
+
+cat("\nExport data frames\n")
+quantile_csv <- file.path(output_dir, "example06_quantiles.csv")
+gof_csv <- file.path(output_dir, "example06_gof.csv")
+diag_csv <- file.path(output_dir, "example06_diagnostics.csv")
+selection_csv <- file.path(output_dir, "example06_selection.csv")
+
+alea_export(as.data.frame(quantiles), quantile_csv, overwrite = TRUE)
+alea_export(as.data.frame(gof), gof_csv, overwrite = TRUE)
+alea_export(as.data.frame(diag), diag_csv, overwrite = TRUE)
+alea_export(as.data.frame(selection), selection_csv, overwrite = TRUE)
+
+print(list.files(output_dir, pattern = "\\.csv$", full.names = TRUE))
+
+cat("\nCreate and export batch tables\n")
+batch_data <- rbind(
+  data.frame(
+    station = "Paraopeba",
+    year = flow_data$water_year_end,
+    value = flow_data$flow_m3s
+  ),
+  data.frame(
+    station = "Paraopeba_scaled_teaching_copy",
+    year = flow_data$water_year_end,
+    value = 1.20 * flow_data$flow_m3s
+  )
 )
 
-cat("Saved multiple plots to:", multi_plot_dir, "\n")
-cat("Files:\n")
-print(list.files(multi_plot_dir, full.names = TRUE))
-cat("\n")
-
-cat("--- 6. Exporting data frames ---\n")
-
-return_level_file <- file.path(output_dir, "example06_return_levels.csv")
-gof_file <- file.path(output_dir, "example06_gof.csv")
-diagnostics_file <- file.path(output_dir, "example06_diagnostics.csv")
-selection_file <- file.path(output_dir, "example06_selection.csv")
-
-alea_export(return_levels, path = return_level_file, overwrite = TRUE)
-alea_export(gof_gev, path = gof_file, overwrite = TRUE)
-alea_export(diagnostics_gev, path = diagnostics_file, overwrite = TRUE)
-alea_export(as.data.frame(selection), path = selection_file, overwrite = TRUE)
-
-cat("Saved table files:\n")
-print(c(return_level_file, gof_file, diagnostics_file, selection_file))
-cat("\n")
-
-cat("--- 7. Exporting batch flat tables ---\n")
-
-# A small batch object is created only to demonstrate batch export.
-batch_data <- data.frame(
-  station = "paraopeba_flow",
-  time = paraopeba_flow$water_year,
-  value = paraopeba_flow$flow_m3s,
-  stringsAsFactors = FALSE
-)
-
-batch <- alea_batch_fit(
-  data = batch_data,
+batch <- alea_fit(
+  batch_data,
   station = "station",
-  time = "time",
+  time = "year",
   value = "value",
-  distributions = c("gev", "gum"),
-  methods = "lmom",
-  return_period = c(2, 10, 50, 100, 200),
+  distribution = c("gev", "gum"),
+  method = "lmom",
+  return_period = c(10, 25, 50, 100),
   gof = TRUE,
   diagnostics = TRUE,
-  select = "ai",
-  quiet = TRUE
+  select = "ai"
 )
 
-# Remove previous CSV outputs from this teaching batch-export folder.
-existing_batch_files <- list.files(
-  batch_export_dir,
-  pattern = "\\.csv$",
-  full.names = TRUE
-)
+print(plot(batch, type = "quantiles"))
+print(plot(batch, type = "quantiles", plot_observed = FALSE))
 
-if (length(existing_batch_files) > 0L) {
-  file.remove(existing_batch_files)
-}
-
+remove_if_exists(batch_tables_dir)
+dir.create(batch_tables_dir, recursive = TRUE, showWarnings = FALSE)
 alea_export(
   batch,
-  path = batch_export_dir,
+  path = batch_tables_dir,
   type = "all",
   overwrite = TRUE
 )
+print(list.files(batch_tables_dir, full.names = TRUE))
 
-cat("Saved batch tables to:", batch_export_dir, "\n")
-cat("Files:\n")
-print(list.files(batch_export_dir, full.names = TRUE))
-cat("\n")
-
-cat(
-  "Teaching note: ALEA-R exports flat batch tables. Heavy object-list fields,\n",
-  "such as fit_objects and selection_objects, are preserved in the alea_batch\n",
-  "object but are not exported as CSV tables by default.\n\n",
-  sep = ""
-)
-
-cat("============================================================\n")
-cat("Example 06 completed successfully.\n")
-cat("============================================================\n")
+cat("\nExample 06 completed.\n")

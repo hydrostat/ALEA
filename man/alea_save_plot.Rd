@@ -35,3 +35,12 @@ The normalized output path, invisibly.
 \description{
 Saves a \code{ggplot} object to disk using \code{ggplot2::ggsave()}.
 }
+\examples{
+x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+       60.3, 45.9)
+fit <- alea_fit(x, distribution = "gev", method = "lmom")
+p <- plot(fit, type = "quantile")
+file <- tempfile(fileext = ".png")
+alea_save_plot(p, filename = file, width = 6, height = 4)
+
+}

@@ -33,8 +33,8 @@ test_that("MOM fitting works through alea_fit for all distributions", {
     expect_named(fit$parameters, expected_names[[distribution]])
     expect_true(all(is.finite(fit$parameters)))
     expect_true(isTRUE(fit$convergence$converged))
-    expect_named(fit$return_levels, c("T10", "T25"))
-    expect_true(all(is.finite(fit$return_levels)))
+    expect_named(fit$quantiles, c("T10", "T25"))
+    expect_true(all(is.finite(fit$quantiles)))
   }
 })
 

@@ -1,4 +1,4 @@
-test_that("Phase 13 Gumbel return levels match closed-form reference", {
+test_that("Phase 13 Gumbel quantiles match closed-form reference", {
   x <- c(
     42.1, 39.4, 51.7, 48.3, 55.2,
     60.1, 46.8, 53.9, 58.4, 62.7,
@@ -14,21 +14,21 @@ test_that("Phase 13 Gumbel return levels match closed-form reference", {
     method = "lmom"
   )
   
-  rl <- alea_return_level(
+  rl <- alea_quantile(
     fit,
     return_period = return_period
   )
   
-  params <- coef(fit)
+  params <- coef(fit, type = "internal")
   
   xi <- unname(params[["xi"]])
   alpha <- unname(params[["alpha"]])
   
   probability_reference <- 1 - 1 / return_period
-  return_level_reference <- xi - alpha * log(-log(probability_reference))
+  quantile_reference <- xi - alpha * log(-log(probability_reference))
   
   expect_s3_class(fit, "alea_fit")
-  expect_s3_class(rl, "alea_return_level")
+  expect_s3_class(rl, "alea_quantile")
   
   expect_identical(
     as.character(rl$distribution),
@@ -55,11 +55,11 @@ test_that("Phase 13 Gumbel return levels match closed-form reference", {
   )
   
   expect_equal(
-    rl$return_level,
-    return_level_reference,
+    rl$quantile,
+    quantile_reference,
     tolerance = 1e-10,
     ignore_attr = TRUE
   )
   
-  expect_true(all(diff(rl$return_level) > 0))
+  expect_true(all(diff(rl$quantile) > 0))
 })

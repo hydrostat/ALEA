@@ -187,7 +187,7 @@ fit_gev_mle <- function(x, ...) {
   make_mle_fit_result_internal(para, "gev", opt)
 }
 
-return_level_gev_internal <- function(return_period, para, ...) {
+quantile_gev_internal <- function(return_period, para, ...) {
   check_return_period(return_period)
   q_gev_internal(1 - 1 / return_period, para)
 }

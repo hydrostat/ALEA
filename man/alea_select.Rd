@@ -78,5 +78,13 @@ predictions on the validation check.
 FADS_AI output should be interpreted as decision-support evidence for
 candidate distribution families. It is not proof of the true generating
 distribution and should not replace goodness-of-fit assessment, diagnostics,
-return-level uncertainty evaluation, or hydrological judgement.
+quantile uncertainty evaluation, or hydrological judgement.
+}
+\examples{
+x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+       60.3, 45.9, 67.2, 44.6)
+selection <- alea_select(x)
+selection
+as.data.frame(selection)
+
 }

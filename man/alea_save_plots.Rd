@@ -46,3 +46,14 @@ A character vector with the normalized output paths, invisibly.
 \description{
 Saves a list of \code{ggplot} objects to disk using \code{alea_save_plot()}.
 }
+\examples{
+x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+       60.3, 45.9)
+fit <- alea_fit(x, distribution = "gev", method = "lmom")
+plots <- list(
+  density = plot(fit, type = "density"),
+  quantile = plot(fit, type = "quantile")
+)
+alea_save_plots(plots, directory = tempdir(), prefix = "alea")
+
+}

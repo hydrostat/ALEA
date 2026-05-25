@@ -2,41 +2,87 @@
 % Please edit documentation in R/alea-fit.R
 \name{alea_fit}
 \alias{alea_fit}
-\title{Fit a probability distribution to a hydrological sample}
+\title{Fit ALEA models}
 \usage{
-alea_fit(x, distribution, method = "lmom", return_period = NULL, ...)
+alea_fit(
+  x,
+  distribution,
+  method = "lmom",
+  return_period = NULL,
+  station = NULL,
+  value = NULL,
+  time = NULL,
+  gof = FALSE,
+  diagnostics = FALSE,
+  select = c("none", "ai"),
+  ai_model = NULL,
+  ai_model_path = NULL,
+  method_priority = c("lmom", "mle", "mom"),
+  quiet = FALSE,
+  ...
+)
 }
 \arguments{
-\item{x}{A numeric vector with the observed sample.}
+\item{x}{A numeric vector with one hydrological series, or a data frame for
+batch analysis.}
 
-\item{distribution}{Character scalar. Distribution to fit. Supported values
-are \code{"gev"}, \code{"gpa"}, \code{"pe3"}, \code{"ln2"}, \code{"ln3"}, and \code{"gum"}.}
+\item{distribution}{Character scalar or vector. Distribution(s) to fit.
+Supported values are \code{"gev"}, \code{"gpa"}, \code{"pe3"}, \code{"ln2"}, \code{"ln3"}, and
+\code{"gum"}. For data-frame input, the default is all supported distributions.}
 
-\item{method}{Character scalar. Estimation method. Supported values are
-\code{"lmom"}, \code{"mom"}, and \code{"mle"}. The default is \code{"lmom"}.}
+\item{method}{Character scalar or vector. Estimation method(s). Supported
+values are \code{"lmom"}, \code{"mom"}, and \code{"mle"}. The default is \code{"lmom"}.}
 
 \item{return_period}{Optional numeric vector of return periods. If supplied,
-return levels are computed and stored in the fitted object for convenience.
-Return periods must be greater than 1.}
+quantiles are computed and stored in the fitted object for convenience.}
 
-\item{...}{Additional arguments passed to internal fitting routines or
-reserved for future extensions.}
+\item{station, value, time}{Optional column names used when \code{x} is a data
+frame. Supplying \code{station} and \code{value} triggers the batch workflow.}
+
+\item{gof}{Logical. For batch workflows, compute goodness-of-fit tables.}
+
+\item{diagnostics}{Logical. For batch workflows, compute diagnostics tables.}
+
+\item{select}{For batch workflows, use \code{"none"} or \code{"ai"}.}
+
+\item{ai_model}{Optional pre-loaded FADS_AI light model for batch workflows.}
+
+\item{ai_model_path}{Optional path to a FADS_AI light model file for batch
+workflows.}
+
+\item{method_priority}{Character vector used by batch AI selection to choose
+the preferred fitted method.}
+
+\item{quiet}{Logical. If \code{TRUE}, suppresses non-essential messages in
+multi-model or batch workflows.}
+
+\item{...}{Additional arguments passed to fitting routines.}
 }
 \value{
-An object of class \code{alea_fit}.
+An \code{alea_fit}, \code{alea_compare}, or \code{alea_batch} object.
 }
 \description{
-\code{alea_fit()} fits one supported probability distribution to a numeric
-hydrological sample using one estimation method.
+\code{alea_fit()} is the main user-facing entry point for ALEA-R fitting
+workflows. It dispatches according to the supplied data and arguments:
 }
 \details{
-The fitted object stores the original numeric sample in its \code{data} field.
-This sample is used by downstream workflows such as return-level bootstrap
-confidence intervals, goodness-of-fit assessment, diagnostics,
-AI-assisted distribution selection, and plotting.
+\itemize{
+\item one numeric series and one distribution-method combination returns
+an \code{alea_fit} object;
+\item one numeric series and multiple distributions or methods returns
+an \code{alea_compare} object;
+\item a data frame with \code{station} and \code{value} columns returns an \code{alea_batch}
+object through the batch workflow.
+}
 
-ALEA-R uses the parameterization adopted by Hosking's \code{lmom} package. For
-example, GEV and GPA use \code{xi}, \code{alpha}, and \code{k}.
+Fitted objects store the original numeric sample in the \code{data} field. This
+sample is used by downstream workflows such as bootstrap quantile confidence
+intervals, goodness-of-fit assessment, diagnostics, AI-assisted distribution
+selection, and plotting.
+
+User-facing coefficient and quantile tables use standardized parameter
+columns: \code{location}, \code{scale}, and \code{shape}. Use \code{alea_dist()} to see how
+these standardized columns map to the internal distribution parameters.
 }
 \examples{
 x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1)
@@ -45,13 +91,10 @@ fit <- alea_fit(x, distribution = "gev", method = "lmom")
 fit
 coef(fit)
 
-fit_with_return_levels <- alea_fit(
-  x,
-  distribution = "gev",
-  method = "lmom",
-  return_period = c(10, 25, 50, 100)
-)
+cmp <- alea_fit(x, distribution = c("gev", "gum"), method = c("lmom", "mle"))
+cmp
 
-fit_with_return_levels
+q <- alea_quantile(fit, return_period = c(10, 25, 50, 100))
+q
 
 }

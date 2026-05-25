@@ -14,6 +14,14 @@
 #'
 #' @return The normalized output path, invisibly.
 #'
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9)
+#' fit <- alea_fit(x, distribution = "gev", method = "lmom")
+#' p <- plot(fit, type = "quantile")
+#' file <- tempfile(fileext = ".png")
+#' alea_save_plot(p, filename = file, width = 6, height = 4)
+#'
 #' @export
 alea_save_plot <- function(
     plot,
@@ -75,6 +83,16 @@ alea_save_plot <- function(
 #' @param ... Additional arguments passed to `alea_save_plot()`.
 #'
 #' @return A character vector with the normalized output paths, invisibly.
+#'
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9)
+#' fit <- alea_fit(x, distribution = "gev", method = "lmom")
+#' plots <- list(
+#'   density = plot(fit, type = "density"),
+#'   quantile = plot(fit, type = "quantile")
+#' )
+#' alea_save_plots(plots, directory = tempdir(), prefix = "alea")
 #'
 #' @export
 alea_save_plots <- function(
@@ -157,7 +175,7 @@ alea_save_plots <- function(
 #'
 #' Exports ALEA objects to disk.
 #'
-#' Currently supported objects are:
+#' Supported objects are:
 #' - `ggplot` objects, saved with `alea_save_plot()`;
 #' - lists of `ggplot` objects, saved with `alea_save_plots()`;
 #' - `alea_batch` objects, exported as CSV tables;
@@ -173,6 +191,14 @@ alea_save_plots <- function(
 #' @param ... Additional arguments passed to lower-level export helpers.
 #'
 #' @return A character vector with normalized output paths, invisibly.
+#'
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9)
+#' fit <- alea_fit(x, distribution = "gev", method = "lmom")
+#' q <- alea_quantile(fit, return_period = c(10, 25, 50))
+#' file <- tempfile(fileext = ".csv")
+#' alea_export(as.data.frame(q), path = file)
 #'
 #' @export
 alea_export <- function(
@@ -350,8 +376,8 @@ resolve_alea_batch_export_types <- function(type) {
   supported_types <- c(
     "stations",
     "fits",
-    "return_levels",
-    "gof",
+    "quantiles",
+        "gof",
     "diagnostics",
     "selection",
     "selected_models",

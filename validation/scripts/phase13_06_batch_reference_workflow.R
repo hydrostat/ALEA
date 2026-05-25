@@ -69,7 +69,7 @@ batch <- alea_batch_fit(
 
 stations <- alea_results(batch, "stations")
 fits <- alea_results(batch, "fits")
-return_levels <- alea_results(batch, "return_levels")
+quantiles <- alea_results(batch, "quantiles")
 gof <- alea_results(batch, "gof")
 diagnostics <- alea_results(batch, "diagnostics")
 selection <- alea_results(batch, "selection")
@@ -82,7 +82,7 @@ stopifnot(inherits(batch, "alea_batch"))
 
 stopifnot(is.data.frame(stations))
 stopifnot(is.data.frame(fits))
-stopifnot(is.data.frame(return_levels))
+stopifnot(is.data.frame(quantiles))
 stopifnot(is.data.frame(gof))
 stopifnot(is.data.frame(diagnostics))
 stopifnot(is.data.frame(selection))
@@ -100,9 +100,9 @@ stopifnot(setequal(fits$distribution, c("gev", "gum")))
 stopifnot(setequal(fits$method, "lmom"))
 
 # 3 stations x 2 fitted models x 3 return periods
-stopifnot(nrow(return_levels) == 18)
-stopifnot(setequal(return_levels$return_period, return_period))
-stopifnot(all(is.finite(return_levels$return_level)))
+stopifnot(nrow(quantiles) == 18)
+stopifnot(setequal(quantiles$return_period, return_period))
+stopifnot(all(is.finite(quantiles$quantile)))
 
 # 3 stations x 2 fitted models x 6 GOF statistics
 stopifnot(nrow(gof) == 36)
@@ -139,7 +139,7 @@ reference <- data.frame(
     "batch_class",
     "stations_rows",
     "fits_rows",
-    "return_levels_rows",
+    "quantiles_rows",
     "gof_rows",
     "diagnostics_non_empty",
     "selection_rows",
@@ -151,7 +151,7 @@ reference <- data.frame(
     inherits(batch, "alea_batch"),
     nrow(stations),
     nrow(fits),
-    nrow(return_levels),
+    nrow(quantiles),
     nrow(gof),
     nrow(diagnostics),
     nrow(selection),
@@ -175,7 +175,7 @@ reference <- data.frame(
     inherits(batch, "alea_batch"),
     nrow(stations) == 3,
     nrow(fits) == 6,
-    nrow(return_levels) == 18,
+    nrow(quantiles) == 18,
     nrow(gof) == 36,
     nrow(diagnostics) > 0,
     nrow(selection) == 3,

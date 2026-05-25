@@ -41,12 +41,12 @@ test_that("LN3 L-moment fitting returns expected structure", {
   expect_true(fit$convergence$converged)
 })
 
-test_that("LN3 return levels match quantiles", {
+test_that("LN3 quantiles match quantiles", {
   para <- c(zeta = 2, mu = 1, sigma = 0.5)
   return_period <- c(2, 10, 100)
 
   expect_equal(
-    ALEA:::return_level_ln3_internal(return_period, para),
+    ALEA:::quantile_ln3_internal(return_period, para),
     ALEA:::q_ln3_internal(1 - 1 / return_period, para)
   )
 })

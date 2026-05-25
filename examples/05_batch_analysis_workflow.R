@@ -1,172 +1,84 @@
-# ALEA-R example 05
-# Batch analysis workflow
+# ALEA-R example 05: Batch analysis workflow
 #
-# Purpose:
-#   This teaching script demonstrates a small batch workflow with public
-#   Paraopeba rainfall and flow annual-maximum series treated as two teaching
-#   sites/variables.
-#
-# Data:
-#   - Annual maximum mean daily flow at P. N. Paraopeba.
-#   - Annual maximum daily rainfall at P. N. Paraopeba.
-#
-# Notes:
-#   - This is a teaching batch example, not a regional analysis.
-#   - The two series have different units and should not be compared as if they
-#     were the same hydrological variable.
-#   - Batch analysis is used here to demonstrate ALEA-R mechanics:
-#     fits, return levels, GOF, diagnostics, AI selection, selected models, and
-#     structured errors.
-#   - Run this script from the ALEA package root directory:
-#       source("examples/05_batch_analysis_workflow.R")
+# This script demonstrates the multi-site workflow. For a compact teaching
+# example, a second station is created as a scaled copy of the Paraopeba annual
+# maximum flow series. This keeps the example reproducible and focused on the
+# ALEA-R batch API.
+
+suppressPackageStartupMessages({
+  library(ALEA)
+})
 
 cat("\n============================================================\n")
-cat("ALEA-R example 05: Batch analysis workflow\n")
-cat("============================================================\n\n")
+cat("Example 05: Batch analysis workflow\n")
+cat("============================================================\n")
 
-cat("--- 1. Loading package and data ---\n")
-library(ALEA)
-
-flow_file <- file.path("examples", "data", "paraopeba_annual_max_flow.csv")
-rain_file <- file.path("examples", "data", "paraopeba_annual_max_rainfall.csv")
-
-if (!file.exists(flow_file)) {
-  stop("Data file not found: ", flow_file)
-}
-if (!file.exists(rain_file)) {
-  stop("Data file not found: ", rain_file)
-}
-
-flow <- read.csv(flow_file, stringsAsFactors = FALSE)
-rain <- read.csv(rain_file, stringsAsFactors = FALSE)
-
-if (!"flow_m3s" %in% names(flow)) {
-  stop("Expected column 'flow_m3s' was not found in the flow data file.")
-}
-if (!"rainfall_mm" %in% names(rain)) {
-  stop("Expected column 'rainfall_mm' was not found in the rainfall data file.")
-}
-
-cat("Flow rows:", nrow(flow), "\n")
-cat("Rainfall rows:", nrow(rain), "\n\n")
-
-cat("--- 2. Building a small batch data frame ---\n")
+data_dir <- if (dir.exists("examples/data")) "examples/data" else "data"
+flow_file <- file.path(data_dir, "paraopeba_annual_max_flow.csv")
+flow_data <- read.csv(flow_file)
 
 batch_data <- rbind(
   data.frame(
-    station = "paraopeba_flow",
-    time = flow$water_year,
-    value = flow$flow_m3s,
-    variable = "annual maximum mean daily flow",
-    unit = "m3/s",
-    stringsAsFactors = FALSE
+    station = "Paraopeba",
+    year = flow_data$water_year_end,
+    value = flow_data$flow_m3s
   ),
   data.frame(
-    station = "paraopeba_rainfall",
-    time = rain$water_year,
-    value = rain$rainfall_mm,
-    variable = "annual maximum daily rainfall",
-    unit = "mm",
-    stringsAsFactors = FALSE
+    station = "Paraopeba_scaled_teaching_copy",
+    year = flow_data$water_year_end,
+    value = 1.20 * flow_data$flow_m3s
   )
 )
 
-cat("Batch rows:", nrow(batch_data), "\n")
-cat("Stations:", paste(unique(batch_data$station), collapse = ", "), "\n\n")
+cat("\nBatch input preview\n")
+print(head(batch_data))
 
-cat("First rows of batch data:\n")
-print(utils::head(batch_data))
-cat("\n")
-
-cat(
-  "Teaching note: the two series use different units. This example demonstrates\n",
-  "batch workflow mechanics only. Interpret each station/variable separately.\n\n",
-  sep = ""
-)
-
-cat("--- 3. Running batch frequency analysis ---\n")
-
-batch <- alea_batch_fit(
-  data = batch_data,
+cat("\nRun batch analysis through alea_fit()\n")
+batch <- alea_fit(
+  batch_data,
   station = "station",
-  time = "time",
+  time = "year",
   value = "value",
-  distributions = c("gev", "gum"),
-  methods = "lmom",
-  return_period = c(2, 5, 10, 25, 50, 100, 200),
+  distribution = c("gev", "gum"),
+  method = "lmom",
+  return_period = c(10, 25, 50, 100, 200),
   gof = TRUE,
   diagnostics = TRUE,
-  select = "ai",
-  quiet = FALSE
+  select = "ai"
 )
-
-cat("Batch object:\n")
 print(batch)
-cat("\n")
 
-cat("--- 4. Extracting batch result tables ---\n")
+cat("\nStation metadata\n")
+print(alea_results(batch, "stations"))
 
-cat("\nStations table:\n")
-stations_table <- alea_results(batch, "stations")
-print(stations_table)
+cat("\nFit summary\n")
+print(alea_results(batch, "fits"))
 
-cat("\nFits table:\n")
-fits_table <- alea_results(batch, "fits")
-print(fits_table)
+cat("\nQuantiles: compact console output\n")
+print(alea_results(batch, "quantiles"))
 
-cat("\nSelected models table:\n")
-selected_models <- alea_results(batch, "selected_models")
-print(selected_models)
+cat("\nQuantiles: full table for analysis/export\n")
+print(as.data.frame(alea_results(batch, "quantiles")))
 
-cat("\nReturn-level table:\n")
-return_levels <- alea_results(batch, "return_levels")
-print(return_levels)
+cat("\nGOF summary\n")
+print(alea_results(batch, "gof"))
 
-cat("\nGOF table:\n")
-gof <- alea_results(batch, "gof")
-print(gof)
+cat("\nDiagnostics summary\n")
+print(alea_results(batch, "diagnostics"))
 
-cat("\nDiagnostics table:\n")
-diagnostics <- alea_results(batch, "diagnostics")
-print(diagnostics)
+cat("\nAI selection summary\n")
+print(alea_results(batch, "selection"))
 
-cat("\nAI-selection table:\n")
-selection <- alea_results(batch, "selection")
-print(selection)
+cat("\nResolved selected models\n")
+print(alea_results(batch, "selected_models"))
 
-cat("\nErrors table:\n")
-errors <- alea_results(batch, "errors")
-print(errors)
+cat("\nStructured errors, if any\n")
+print(alea_results(batch, "errors"))
 
-cat(
-  "\nTeaching note: the errors table is part of the expected batch structure.\n",
-  "When no errors occur, it should still exist as an empty data frame with\n",
-  "stable columns.\n\n",
-  sep = ""
-)
+cat("\nBatch plots\n")
+print(plot(batch, type = "quantiles"))
+print(plot(batch, type = "quantiles", plot_observed = FALSE))
+print(plot(batch, type = "gof"))
+print(plot(batch, type = "diagnostics"))
 
-cat("--- 5. Plotting batch summaries ---\n")
-
-p_selected <- plot(batch, type = "selected_models")
-cat("Printing selected-model plot...\n")
-print(p_selected)
-
-p_return <- plot(
-  batch,
-  type = "return_levels",
-  return_period_scale = "gumbel"
-)
-cat("Printing batch return-level plot...\n")
-print(p_return)
-
-p_gof <- plot(batch, type = "gof", statistic = "aic")
-cat("Printing batch GOF plot for AIC...\n")
-print(p_gof)
-
-p_diag <- plot(batch, type = "diagnostics")
-cat("Printing batch diagnostics plot...\n")
-print(p_diag)
-
-cat("\n============================================================\n")
-cat("Example 05 completed successfully.\n")
-cat("============================================================\n")
+cat("\nExample 05 completed.\n")

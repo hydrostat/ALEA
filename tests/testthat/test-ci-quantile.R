@@ -1,4 +1,4 @@
-test_that("confint.alea_fit returns bootstrap return-level CI structure", {
+test_that("confint.alea_fit returns bootstrap quantile CI structure", {
   x <- c(
     18.2, 21.5, 24.1, 26.8, 29.4, 33.7, 37.9, 42.6,
     48.3, 55.1, 63.8, 74.5, 88.9, 106.4, 128.7,
@@ -16,12 +16,12 @@ test_that("confint.alea_fit returns bootstrap return-level CI structure", {
     seed = 123
   )
   
-  expect_s3_class(ci, "alea_return_level_ci")
+  expect_s3_class(ci, "alea_quantile_ci")
   expect_s3_class(ci, "data.frame")
   
   expect_true(all(c(
     "distribution", "method", "return_period", "probability",
-    "return_level", "conf_level", "conf_method", "lower", "upper",
+    "quantile", "conf_level", "conf_method", "lower", "upper",
     "n_boot", "n_success", "n_failed"
   ) %in% names(ci)))
   
@@ -140,7 +140,7 @@ test_that("confint.alea_fit rejects unsupported parm", {
   
   expect_error(
     confint(fit, parm = "parameters", return_period = 10, n_boot = 10),
-    "Only parm = 'return_level' is currently supported.",
+    "Only parm = 'quantile' is currently supported.",
     fixed = TRUE
   )
 })
@@ -188,7 +188,7 @@ test_that("confint.alea_fit works for all distributions and methods with small b
         seed = 123
       ))
       
-      expect_s3_class(ci, "alea_return_level_ci")
+      expect_s3_class(ci, "alea_quantile_ci")
       expect_equal(nrow(ci), 2)
       expect_true(all(ci$n_boot == 10))
       expect_true(all(ci$n_success >= 1))
@@ -200,7 +200,7 @@ test_that("confint.alea_fit works for all distributions and methods with small b
 })
 
 
-test_that("print.alea_return_level_ci prints expected header", {
+test_that("print.alea_quantile_ci prints expected header", {
   x <- c(
     18.2, 21.5, 24.1, 26.8, 29.4, 33.7, 37.9, 42.6,
     48.3, 55.1, 63.8, 74.5, 88.9, 106.4, 128.7,
@@ -218,11 +218,11 @@ test_that("print.alea_return_level_ci prints expected header", {
   
   expect_output(
     print(ci),
-    "ALEA return-level confidence intervals"
+    "ALEA quantile confidence intervals"
   )
 })
 
-test_that("as.data.frame.alea_return_level_ci drops custom class", {
+test_that("as.data.frame.alea_quantile_ci drops custom class", {
   x <- c(
     18.2, 21.5, 24.1, 26.8, 29.4, 33.7, 37.9, 42.6,
     48.3, 55.1, 63.8, 74.5, 88.9, 106.4, 128.7,
@@ -241,5 +241,5 @@ test_that("as.data.frame.alea_return_level_ci drops custom class", {
   df <- as.data.frame(ci)
   
   expect_s3_class(df, "data.frame")
-  expect_false(inherits(df, "alea_return_level_ci"))
+  expect_false(inherits(df, "alea_quantile_ci"))
 })

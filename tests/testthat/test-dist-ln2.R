@@ -42,12 +42,12 @@ test_that("LN2 rejects non-positive observations during fitting", {
   expect_error(ALEA:::fit_ln2_lmom(c(0, 1, 2, 3)), "positive")
 })
 
-test_that("LN2 return levels match quantiles", {
+test_that("LN2 quantiles match quantiles", {
   para <- c(mu = 1, sigma = 0.5)
   return_period <- c(2, 10, 100)
 
   expect_equal(
-    ALEA:::return_level_ln2_internal(return_period, para),
+    ALEA:::quantile_ln2_internal(return_period, para),
     ALEA:::q_ln2_internal(1 - 1 / return_period, para)
   )
 })

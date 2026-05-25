@@ -11,11 +11,22 @@
 
 \item{type}{Character scalar. Plot type. One of \code{"statistic"} or \code{"rank"}.}
 
-\item{...}{Additional arguments passed to methods. Currently unused.}
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A \code{ggplot} object.
 }
 \description{
 Produces a goodness-of-fit plot from an \code{alea_gof} object.
+}
+\examples{
+x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+       60.3, 45.9)
+fit <- alea_fit(x, distribution = "gev", method = "lmom")
+gof <- alea_gof(fit)
+plot(gof, type = "statistic")
+
+cmp <- alea_compare(x, distributions = c("gev", "gum"), methods = "lmom")
+plot(alea_gof(cmp), type = "rank")
+
 }

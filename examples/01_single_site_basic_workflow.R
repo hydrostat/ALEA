@@ -1,173 +1,74 @@
-# ALEA-R example 01
-# Single-site basic workflow
+# ALEA-R example 01: Single-site basic workflow
 #
-# Purpose:
-#   This teaching script demonstrates a minimal at-site frequency-analysis
-#   workflow with ALEA-R for one hydrological series.
-#
-# Data:
-#   Public annual maximum mean daily flow data for the Paraopeba River at
-#   P. N. Paraopeba, Brazil, used here as a teaching dataset.
-#
-# Teaching reference:
-#   Naghettini, M. (ed.) (2017). Fundamentals of Statistical Hydrology.
-#
-# Notes:
-#   - This script uses only the ALEA-R public API.
-#   - The fitted distribution is GEV, estimated by L-moments.
-#   - Long return periods are shown for teaching purposes and should be
-#     interpreted with caution.
-#   - Run this script from the ALEA package root directory:
-#       source("examples/01_single_site_basic_workflow.R")
+# This script demonstrates the core one-model workflow:
+# one hydrological series -> one fitted model -> quantiles, GOF,
+# diagnostics, AI-assisted distribution-selection support, and plots.
+
+suppressPackageStartupMessages({
+  library(ALEA)
+})
 
 cat("\n============================================================\n")
-cat("ALEA-R example 01: Single-site basic workflow\n")
-cat("============================================================\n\n")
+cat("Example 01: Single-site basic workflow\n")
+cat("============================================================\n")
 
-cat("--- 1. Loading package ---\n")
-library(ALEA)
-cat("ALEA loaded successfully.\n\n")
+# Locate teaching data whether the script is run from the package root or from
+# inside the examples/ folder.
+data_dir <- if (dir.exists("examples/data")) "examples/data" else "data"
+flow_file <- file.path(data_dir, "paraopeba_annual_max_flow.csv")
 
-cat("--- 2. Reading Paraopeba annual maximum flow data ---\n")
-data_file <- file.path("examples", "data", "paraopeba_annual_max_flow.csv")
+flow_data <- read.csv(flow_file)
+x <- flow_data$flow_m3s
 
-if (!file.exists(data_file)) {
-  stop(
-    "Data file not found: ", data_file, "\n",
-    "Please run this script from the ALEA package root directory and check ",
-    "that the Paraopeba CSV files are available in examples/data/."
-  )
-}
+cat("\nData summary\n")
+print(summary(x))
 
-paraopeba_flow <- read.csv(data_file, stringsAsFactors = FALSE)
+cat("\nSupported distributions and parameter roles\n")
+print(alea_dist())
 
-cat("Data file:", data_file, "\n")
-cat("Number of rows:", nrow(paraopeba_flow), "\n")
-cat("Column names:", paste(names(paraopeba_flow), collapse = ", "), "\n\n")
+cat("\nGEV parameter mapping\n")
+print(alea_dist("gev"))
 
-cat("First rows of the dataset:\n")
-print(utils::head(paraopeba_flow))
-cat("\n")
-
-cat("--- 3. Preparing the hydrological sample ---\n")
-
-if (!"flow_m3s" %in% names(paraopeba_flow)) {
-  stop("Expected column 'flow_m3s' was not found in the data file.")
-}
-
-x <- paraopeba_flow$flow_m3s
-x <- x[is.finite(x)]
-
-cat("Finite observations:", length(x), "\n")
-cat("Minimum flow:", min(x), "m3/s\n")
-cat("Maximum flow:", max(x), "m3/s\n")
-cat("Mean flow:", mean(x), "m3/s\n")
-cat("Standard deviation:", stats::sd(x), "m3/s\n\n")
-
-cat("--- 4. Fitting a GEV distribution by L-moments ---\n")
-
-fit_gev <- alea_fit(
+cat("\nFit one model with alea_fit()\n")
+fit <- alea_fit(
   x,
   distribution = "gev",
   method = "lmom"
 )
+print(fit)
 
-cat("Fitted model:\n")
-print(fit_gev)
-cat("\n")
+cat("\nClass of the fitted object\n")
+print(class(fit))
 
-cat("Estimated parameters:\n")
-print(coef(fit_gev))
-cat("\n")
+cat("\nUser-facing coefficients\n")
+print(coef(fit))
 
-cat("--- 5. Estimating return levels ---\n")
+cat("\nDistribution-specific internal coefficients\n")
+print(coef(fit, type = "internal"))
 
-# Include a return period larger than the largest empirical plotting position
-# so that observed points can be displayed in the return-level plot without
-# being truncated. Long return periods are shown for teaching purposes and
-# should be interpreted with caution.
+cat("\nSample diagnostics\n")
+diag <- alea_diagnostics(fit)
+print(diag)
+
+cat("\nGoodness-of-fit statistics\n")
+gof <- alea_gof(fit)
+print(gof)
+
+cat("\nDesign quantiles\n")
 return_periods <- c(2, 5, 10, 25, 50, 100, 200)
+quantiles <- alea_quantile(fit, return_period = return_periods)
+print(quantiles)
 
-return_levels <- alea_return_level(
-  fit_gev,
-  return_period = return_periods
-)
+cat("\nAI-assisted distribution-selection support\n")
+selection <- alea_select(x)
+print(selection)
 
-cat("Return-level estimates:\n")
-print(return_levels)
-cat("\n")
+cat("\nBasic plots\n")
+print(plot(fit, type = "density"))
+print(plot(fit, type = "cdf"))
+print(plot(fit, type = "quantile"))
 
-cat(
-  "Teaching note: the 100-year and 200-year return levels are extrapolations\n",
-  "beyond the central part of the observed record. They should be interpreted\n",
-  "together with uncertainty, diagnostics, and hydrological judgement.\n\n",
-  sep = ""
-)
+cat("\nSame quantile plot without observed plotting-position points\n")
+print(plot(fit, type = "quantile", plot_observed = FALSE))
 
-cat("--- 6. Computing goodness-of-fit statistics ---\n")
-
-gof_gev <- alea_gof(fit_gev, statistics = "all")
-
-cat("Goodness-of-fit statistics:\n")
-print(gof_gev)
-cat("\n")
-
-cat(
-  "Teaching note: ALEA-R currently reports GOF statistics and information\n",
-  "criteria, not calibrated GOF p-values. These values should be used as\n",
-  "evidence for model comparison, not as automatic accept/reject rules.\n\n",
-  sep = ""
-)
-
-cat("--- 7. Computing sample diagnostics ---\n")
-
-diagnostics_gev <- alea_diagnostics(fit_gev, diagnostics = "all")
-
-cat("Sample diagnostics:\n")
-print(diagnostics_gev)
-cat("\n")
-
-cat(
-  "Teaching note: diagnostic warnings do not automatically invalidate a fitted\n",
-  "model. They flag issues that should be reviewed together with hydrological\n",
-  "knowledge and the intended application.\n\n",
-  sep = ""
-)
-
-cat("--- 8. Creating plots ---\n")
-
-p_density <- plot(fit_gev, type = "density")
-p_cdf <- plot(fit_gev, type = "cdf")
-p_qq <- plot(fit_gev, type = "qq")
-p_pp <- plot(fit_gev, type = "pp")
-p_return_level <- plot(
-  fit_gev,
-  type = "return_level",
-  return_period = return_periods
-)
-
-cat("Printing density plot...\n")
-print(p_density)
-
-cat("Printing CDF plot...\n")
-print(p_cdf)
-
-cat("Printing Q-Q plot...\n")
-print(p_qq)
-
-cat("Printing P-P plot...\n")
-print(p_pp)
-
-cat("Printing return-level plot...\n")
-print(p_return_level)
-
-cat("\nPlots were created as ggplot objects:\n")
-cat("  p_density\n")
-cat("  p_cdf\n")
-cat("  p_qq\n")
-cat("  p_pp\n")
-cat("  p_return_level\n\n")
-
-cat("============================================================\n")
-cat("Example 01 completed successfully.\n")
-cat("============================================================\n")
+cat("\nExample 01 completed.\n")

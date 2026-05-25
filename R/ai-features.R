@@ -9,6 +9,7 @@
 #' Return the AI feature names used by the deployed FADS_AI model
 #'
 #' @keywords internal
+#' @noRd
 extract_ai_feature_names <- function(feature_set = "fads_ai_classical_v1") {
   feature_set <- match.arg(feature_set, "fads_ai_classical_v1")
 
@@ -25,6 +26,7 @@ extract_ai_feature_names <- function(feature_set = "fads_ai_classical_v1") {
 #' Extract FADS_AI features from a numeric sample
 #'
 #' @keywords internal
+#' @noRd
 extract_ai_features <- function(x, feature_set = "fads_ai_classical_v1") {
   feature_set <- match.arg(feature_set, "fads_ai_classical_v1")
 
@@ -70,6 +72,7 @@ extract_ai_features <- function(x, feature_set = "fads_ai_classical_v1") {
 #' Build a FADS_AI application row
 #'
 #' @keywords internal
+#' @noRd
 build_ai_application_row <- function(
   x,
   sample_id = "observed_sample",
@@ -109,6 +112,7 @@ build_ai_application_row <- function(
 #' Validate that a feature row contains the model-required columns
 #'
 #' @keywords internal
+#' @noRd
 validate_ai_feature_row <- function(feature_row, required_features = extract_ai_feature_names()) {
   if (!is.data.frame(feature_row)) {
     stop("`feature_row` must be a data frame.", call. = FALSE)

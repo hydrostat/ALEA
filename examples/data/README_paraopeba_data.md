@@ -1,16 +1,11 @@
 # Paraopeba teaching data
 
-These CSV files were prepared for ALEA-R Phase 14 educational examples.
+This folder contains small teaching datasets used by the ALEA-R example scripts.
 
-Files:
-- `paraopeba_annual_max_flow.csv`
-- `paraopeba_annual_max_rainfall.csv`
-- `paraopeba_annual_mean_flow.csv`
+The files are intended for reproducible hydrological frequency-analysis examples:
 
-The series are public PLU/FLU hydrological records used as teaching data in
-Naghettini (2017), *Fundamentals of Statistical Hydrology*. The book is cited as
-the teaching reference; book text, figures, formatted tables, and editorial
-conclusions are not redistributed here.
+- `paraopeba_annual_max_flow.csv`: annual maximum flow series.
+- `paraopeba_annual_max_rainfall.csv`: annual maximum rainfall series.
+- `paraopeba_annual_mean_flow.csv`: annual mean flow series.
 
-Missing values are encoded as blank cells in the CSV files so they are read as
-`NA` by R's `read.csv()` with default settings.
+The data are included for teaching and demonstration. Users should check the original source, metadata, screening choices, and hydrological context before using the data for formal engineering decisions.

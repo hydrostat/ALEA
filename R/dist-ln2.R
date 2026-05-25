@@ -127,7 +127,7 @@ fit_ln2_mle <- function(x, ...) {
   )
 }
 
-return_level_ln2_internal <- function(return_period, para, ...) {
+quantile_ln2_internal <- function(return_period, para, ...) {
   check_return_period(return_period)
   q_ln2_internal(1 - 1 / return_period, para)
 }

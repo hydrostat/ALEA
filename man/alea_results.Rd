@@ -6,7 +6,7 @@
 \usage{
 alea_results(
   object,
-  type = c("stations", "fits", "fit_objects", "return_levels", "gof", "diagnostics",
+  type = c("stations", "fits", "fit_objects", "quantiles", "gof", "diagnostics",
     "selection", "selection_objects", "selected_models", "errors"),
   ...
 )
@@ -14,13 +14,42 @@ alea_results(
 \arguments{
 \item{object}{An object of class \code{alea_batch}.}
 
-\item{type}{Result table to extract.}
+\item{type}{Character scalar. Result component to extract. Supported values
+are \code{"stations"}, \code{"fits"}, \code{"fit_objects"}, \code{"quantiles"}, \code{"gof"},
+\code{"diagnostics"}, \code{"selection"}, \code{"selection_objects"},
+\code{"selected_models"}, and \code{"errors"}.}
 
-\item{...}{Currently unused.}
+\item{...}{Additional arguments.}
 }
 \value{
-A data frame or list, depending on \code{type}.
+A data frame with a lightweight S3 class for compact console
+printing, or a list for object-list components. Use \code{as.data.frame()} on
+returned tables to access the complete underlying data frame.
 }
 \description{
-Extract results from an ALEA batch object
+Extracts station metadata, fit summaries, quantiles, goodness-of-fit tables,
+diagnostics, AI-selection summaries, selected models, stored fit objects, or
+structured errors from an \code{alea_batch} object.
+}
+\details{
+Tables returned by \code{alea_results()} are ordered for reporting. Quantile,
+goodness-of-fit, diagnostics, and error tables are ordered by station,
+distribution, and estimation method, followed by the relevant result field.
+}
+\examples{
+data <- data.frame(
+  station = rep(c("A", "B"), each = 10),
+  value = c(42, 39, 51, 47, 62, 55, 50, 58, 60, 46,
+            50, 47, 61, 56, 75, 66, 60, 70, 72, 55)
+)
+batch <- alea_batch_fit(
+  data, station = "station", value = "value",
+  distributions = c("gev", "gum"),
+  methods = "lmom",
+  return_period = c(10, 25),
+  gof = TRUE
+)
+alea_results(batch, "quantiles")
+as.data.frame(alea_results(batch, "quantiles"))
+
 }

@@ -129,7 +129,7 @@ fit_pe3_mle <- function(x, ...) {
   make_mle_fit_result_internal(para, "pe3", opt)
 }
 
-return_level_pe3_internal <- function(return_period, para, ...) {
+quantile_pe3_internal <- function(return_period, para, ...) {
   check_return_period(return_period)
   q_pe3_internal(1 - 1 / return_period, para)
 }

@@ -1,17 +1,27 @@
 #' Goodness-of-fit statistics for ALEA fitted models
 #'
-#' Computes goodness-of-fit statistics and information criteria for an ALEA
-#' fitted model.
+#' Computes goodness-of-fit statistics and information criteria for ALEA fitted
+#' models.
 #'
-#' The initial implementation supports objects of class `alea_fit`.
+#' Methods are available for `alea_fit` and `alea_compare` objects. For
+#' `alea_compare` objects, results are combined across all successfully fitted
+#' models.
 #'
-#' @param object An object returned by `alea_fit`.
+#' @param object An object returned by `alea_fit()` or `alea_compare()`.
 #' @param statistics Character vector with statistics to compute. Supported
 #'   values are `"ks"`, `"cvm"`, `"ad"`, `"loglik"`, `"aic"`, and `"bic"`.
 #'   Use `"all"` to compute all supported statistics.
-#' @param ... Additional arguments passed to methods. Currently unused.
+#' @param ... Additional arguments passed to methods.
 #'
 #' @return A data frame with S3 class `alea_gof`.
+#'
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9)
+#' fit <- alea_fit(x, distribution = "gev", method = "lmom")
+#' gof <- alea_gof(fit)
+#' gof
+#' plot(gof, type = "statistic")
 #'
 #' @export
 alea_gof <- function(object, statistics = c("ks", "cvm", "ad", "loglik", "aic", "bic"), ...) {
@@ -156,21 +166,63 @@ alea_gof.alea_fit <- function(
 
 
 #' @export
-print.alea_gof <- function(x, ...) {
+print.alea_gof <- function(x, digits = 4, max_rows = 20, ...) {
+  df <- as.data.frame(x)
+
   cat("Goodness-of-fit results\n")
-  cat("Distribution:", unique(x$distribution), "\n")
-  cat("Method:", unique(x$method), "\n")
-  cat("Number of observations:", unique(x$n), "\n\n")
-  
-  print.data.frame(as.data.frame(x), row.names = FALSE, ...)
+
+  distributions <- unique(df$distribution)
+  methods <- unique(df$method)
+  model_keys <- unique(paste(df$distribution, df$method, sep = "|"))
+  n_models <- length(model_keys)
+  better <- ifelse(df$higher_is_better, "higher", "lower")
+
+  if (n_models == 1L) {
+    cat("Distribution:", distributions, "\n")
+    cat("Method:", methods, "\n")
+    cat("Observations:", unique(df$n), "\n")
+    cat("Parameters:", unique(df$n_parameters), "\n\n")
+
+    out <- data.frame(
+      statistic = df$statistic,
+      estimate = df$estimate,
+      better = better,
+      stringsAsFactors = FALSE
+    )
+    out <- round_numeric_columns_internal(out, digits = digits)
+    print.data.frame(out, row.names = FALSE)
+  } else {
+    cat("Distributions:", paste(distributions, collapse = ", "), "\n")
+    cat("Methods:", paste(methods, collapse = ", "), "\n")
+    cat("Models:", n_models, "\n")
+    cat("Rows:", nrow(df), "\n\n")
+
+    out <- data.frame(
+      distribution = df$distribution,
+      method = df$method,
+      statistic = df$statistic,
+      estimate = df$estimate,
+      better = better,
+      stringsAsFactors = FALSE
+    )
+    out <- round_numeric_columns_internal(out, digits = digits)
+    out <- compact_print_rows_internal(out, max_rows = max_rows)
+    print.data.frame(out, row.names = FALSE)
+  }
+
+  if (all(is.na(df$p_value))) {
+    cat("\nCalibrated p-values are not implemented.\n")
+  }
+
+  cat("Use as.data.frame(x) for the full goodness-of-fit table.\n")
+
   invisible(x)
 }
-
 
 #' @export
 as.data.frame.alea_gof <- function(x, ...) {
   class(x) <- "data.frame"
-  x
+  order_alea_model_table_internal(x)
 }
 
 

@@ -7,8 +7,8 @@
 #' formal hydrological judgment and do not automatically invalidate a fitted
 #' model.
 #'
-#' The initial diagnostics include simple sample checks and hypothesis-based
-#' diagnostics implemented through the CRAN package `trend` when available.
+#' Diagnostics include simple sample checks and hypothesis-based checks
+#' implemented through the CRAN package `trend` when available.
 #'
 #' @param object A numeric vector or an object returned by `alea_fit`.
 #' @param diagnostics Character vector with diagnostics to compute. Supported
@@ -17,9 +17,18 @@
 #'   `"stationarity"`. Use `"all"` to compute all supported diagnostics.
 #' @param min_n Minimum sample size used by the sample-size diagnostic.
 #' @param alpha Significance level used by hypothesis-test diagnostics.
-#' @param ... Additional arguments passed to methods. Currently unused.
+#' @param ... Additional arguments passed to methods.
 #'
 #' @return A data frame with S3 class `alea_diagnostics`.
+#'
+#' @examples
+#' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+#'        60.3, 45.9)
+#' diagnostics <- alea_diagnostics(x)
+#' diagnostics
+#'
+#' fit <- alea_fit(x, distribution = "gev", method = "lmom")
+#' alea_diagnostics(fit)
 #'
 #' @export
 alea_diagnostics <- function(
@@ -99,23 +108,59 @@ alea_diagnostics.alea_fit <- function(
 
 
 #' @export
-print.alea_diagnostics <- function(x, ...) {
+print.alea_diagnostics <- function(x, digits = 4, max_rows = 12, ...) {
+  df <- as.data.frame(x)
+  
   cat("ALEA diagnostics\n")
   
-  distribution <- unique(x$distribution)
-  method <- unique(x$method)
+  n_obs <- unique(df$n)
+  n_obs <- n_obs[!is.na(n_obs)]
   
-  if (length(distribution) == 1L && !is.na(distribution)) {
+  if (length(n_obs) == 1L) {
+    cat("Number of observations:", n_obs, "\n")
+  }
+  
+  distribution <- unique(df$distribution)
+  method <- unique(df$method)
+  
+  distribution <- distribution[!is.na(distribution)]
+  method <- method[!is.na(method)]
+  
+  if (length(distribution) == 1L) {
     cat("Distribution:", distribution, "\n")
   }
   
-  if (length(method) == 1L && !is.na(method)) {
+  if (length(method) == 1L) {
     cat("Estimation method:", method, "\n")
   }
   
-  cat("Number of observations:", unique(x$n), "\n\n")
+  if (length(distribution) == 0L && length(method) == 0L) {
+    cat("Context: sample\n")
+  }
   
-  print.data.frame(as.data.frame(x), row.names = FALSE, ...)
+  cat("\n")
+  
+  out <- data.frame(
+    diagnostic = df$diagnostic,
+    value = round(df$value, digits = digits),
+    p_value = round(df$p_value, digits = digits),
+    status = df$status,
+    reject = df$reject,
+    message = simplify_diagnostic_messages(df$message),
+    stringsAsFactors = FALSE
+  )
+  
+  if (nrow(out) > max_rows) {
+    print.data.frame(utils::head(out, max_rows), row.names = FALSE)
+    cat("\n")
+    cat("Showing first", max_rows, "of", nrow(out), "diagnostic rows.\n")
+  } else {
+    print.data.frame(out, row.names = FALSE)
+    cat("\n")
+  }
+  
+  cat("Use as.data.frame(x) for the full diagnostics table.\n")
+  
   invisible(x)
 }
 
@@ -123,7 +168,79 @@ print.alea_diagnostics <- function(x, ...) {
 #' @export
 as.data.frame.alea_diagnostics <- function(x, ...) {
   class(x) <- "data.frame"
-  x
+  order_alea_model_table_internal(x)
+}
+
+
+simplify_diagnostic_messages <- function(message) {
+  out <- as.character(message)
+  
+  replacements <- c(
+    "Sample size is acceptable for initial frequency analysis\\." =
+      "Sample size is acceptable.",
+    "Sample size is smaller than the recommended minimum for initial frequency analysis\\." =
+      "Sample size is below the recommended minimum.",
+    "No missing or non-finite values detected\\." =
+      "No missing/non-finite values.",
+    "Missing or non-finite values were detected and should be reviewed\\." =
+      "Missing/non-finite values detected.",
+    "No tied values detected\\." =
+      "No tied values.",
+    "Tied values were detected and should be reviewed\\." =
+      "Tied values detected.",
+    "No finite observations are available to evaluate ties\\." =
+      "No finite observations for ties.",
+    "No finite observations are available to evaluate sample range\\." =
+      "No finite observations for range.",
+    "Sample has one or fewer unique finite values\\." =
+      "One or fewer unique values.",
+    "Sample has more than one unique finite value\\." =
+      "More than one unique value.",
+    "At least three finite observations are required to evaluate sample skewness\\." =
+      "At least three values needed for skewness.",
+    "Sample skewness is finite\\." =
+      "Sample skewness is finite.",
+    "Sample skewness is not finite and should be reviewed\\." =
+      "Sample skewness is not finite.",
+    "At least five finite observations are recommended for the Bartels randomness test\\." =
+      "At least five values needed for randomness test.",
+    "The Bartels test does not indicate non-randomness\\." =
+      "No evidence of non-randomness.",
+    "The Bartels test suggests possible non-randomness\\." =
+      "Possible non-randomness.",
+    "The Bartels randomness test requires the suggested package 'trend'\\." =
+      "Package 'trend' is required for randomness.",
+    "At least four finite observations are required for the Wald-Wolfowitz independence test\\." =
+      "At least four values needed for independence test.",
+    "The Wald-Wolfowitz test does not indicate serial dependence\\." =
+      "No evidence of serial dependence.",
+    "The Wald-Wolfowitz test suggests possible serial dependence\\." =
+      "Possible serial dependence.",
+    "The Wald-Wolfowitz independence test requires the suggested package 'trend'\\." =
+      "Package 'trend' is required for independence.",
+    "At least six finite observations are recommended for the Pettitt homogeneity test\\." =
+      "At least six values needed for homogeneity test.",
+    "The Pettitt test does not indicate a change point\\." =
+      "No evidence of change point.",
+    "The Pettitt test suggests a possible change point\\." =
+      "Possible change point.",
+    "The Pettitt homogeneity test requires the suggested package 'trend'\\." =
+      "Package 'trend' is required for homogeneity.",
+    "At least four finite observations are required for the Mann-Kendall stationarity test\\." =
+      "At least four values needed for stationarity test.",
+    "The Mann-Kendall test does not indicate a monotonic trend\\." =
+      "No evidence of monotonic trend.",
+    "The Mann-Kendall test suggests a possible monotonic trend\\." =
+      "Possible monotonic trend.",
+    "The Mann-Kendall stationarity test requires the suggested package 'trend'\\." =
+      "Package 'trend' is required for stationarity."
+  )
+  
+  for (pattern in names(replacements)) {
+    out <- sub(pattern, replacements[[pattern]], out)
+  }
+  
+  out
 }
 
 

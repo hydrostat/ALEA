@@ -11,11 +11,18 @@
 
 \item{type}{Character scalar. Plot type. One of \code{"status"} or \code{"p_value"}.}
 
-\item{...}{Additional arguments passed to methods. Currently unused.}
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A \code{ggplot} object.
 }
 \description{
 Produces diagnostic plots from an \code{alea_diagnostics} object.
+}
+\examples{
+x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+       60.3, 45.9)
+diagnostics <- alea_diagnostics(x)
+plot(diagnostics, type = "status")
+
 }

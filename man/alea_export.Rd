@@ -27,11 +27,20 @@ A character vector with normalized output paths, invisibly.
 Exports ALEA objects to disk.
 }
 \details{
-Currently supported objects are:
+Supported objects are:
 \itemize{
 \item \code{ggplot} objects, saved with \code{alea_save_plot()};
 \item lists of \code{ggplot} objects, saved with \code{alea_save_plots()};
 \item \code{alea_batch} objects, exported as CSV tables;
 \item data frames, exported as a CSV table.
 }
+}
+\examples{
+x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+       60.3, 45.9)
+fit <- alea_fit(x, distribution = "gev", method = "lmom")
+q <- alea_quantile(fit, return_period = c(10, 25, 50))
+file <- tempfile(fileext = ".csv")
+alea_export(as.data.frame(q), path = file)
+
 }

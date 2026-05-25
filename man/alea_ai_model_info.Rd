@@ -20,3 +20,8 @@ An object of class \code{alea_ai_model_info}.
 Return lightweight metadata about the FADS_AI application model bundled
 with ALEA-R or supplied by the user.
 }
+\examples{
+info <- alea_ai_model_info(quiet = TRUE)
+info
+
+}

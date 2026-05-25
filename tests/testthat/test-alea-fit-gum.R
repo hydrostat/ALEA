@@ -12,7 +12,7 @@ test_that("alea_fit returns an alea_fit object for GUM L-moments", {
   expect_equal(fit$n, length(x))
 })
 
-test_that("alea_fit computes GUM return levels", {
+test_that("alea_fit computes GUM quantiles", {
   set.seed(123)
   x <- ALEA:::r_gum_internal(100, c(xi = 10, alpha = 2))
   return_period <- c(10, 25, 50)
@@ -24,10 +24,10 @@ test_that("alea_fit computes GUM return levels", {
     return_period = return_period
   )
 
-  expected <- ALEA:::return_level_gum_internal(return_period, fit$parameters)
+  expected <- ALEA:::quantile_gum_internal(return_period, fit$parameters)
   names(expected) <- paste0("T", return_period)
 
-  expect_equal(fit$return_levels, expected)
+  expect_equal(fit$quantiles, expected)
 })
 
 test_that("alea_fit accepts all supported GUM estimation methods", {
@@ -57,5 +57,6 @@ test_that("coef.alea_fit returns fitted parameters", {
   x <- c(10, 12, 15, 18, 20, 22)
   fit <- alea_fit(x, distribution = "gum", method = "lmom")
 
-  expect_equal(coef(fit), fit$parameters)
+  expect_equal(coef(fit, type = "internal"), fit$parameters)
+  expect_named(coef(fit), c("location", "scale", "shape"))
 })

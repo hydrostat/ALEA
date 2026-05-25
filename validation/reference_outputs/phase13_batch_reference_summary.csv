@@ -2,7 +2,7 @@
 "P13-BATCH-001","batch_class","TRUE","TRUE",TRUE
 "P13-BATCH-001","stations_rows","3","3",TRUE
 "P13-BATCH-001","fits_rows","6","6",TRUE
-"P13-BATCH-001","return_levels_rows","18","18",TRUE
+"P13-BATCH-001","quantiles_rows","18","18",TRUE
 "P13-BATCH-001","gof_rows","36","36",TRUE
 "P13-BATCH-001","diagnostics_non_empty","54",">0",TRUE
 "P13-BATCH-001","selection_rows","3","3",TRUE

@@ -33,7 +33,7 @@ test_that("plot.alea_batch returns a ggplot object for selected models", {
 })
 
 
-test_that("plot.alea_batch returns a ggplot object for return levels", {
+test_that("plot.alea_batch returns a ggplot object for quantiles", {
   skip_if_not_installed("ggplot2")
   
   batch <- alea_batch_fit(
@@ -47,7 +47,7 @@ test_that("plot.alea_batch returns a ggplot object for return levels", {
     quiet = TRUE
   )
   
-  p <- plot(batch, type = "return_levels")
+  p <- plot(batch, type = "quantiles")
   
   expect_s3_class(p, "ggplot")
 })
@@ -164,7 +164,7 @@ test_that("plot.alea_batch selected models requires selected_models output", {
 })
 
 
-test_that("plot.alea_batch return levels requires return_levels output", {
+test_that("plot.alea_batch quantiles requires quantiles output", {
   skip_if_not_installed("ggplot2")
   
   batch <- alea_batch_fit(
@@ -177,8 +177,8 @@ test_that("plot.alea_batch return levels requires return_levels output", {
   )
   
   expect_error(
-    plot(batch, type = "return_levels"),
-    "`x\\$return_levels` is empty"
+    plot(batch, type = "quantiles"),
+    "`x\\$quantiles` is empty"
   )
 })
 
@@ -259,11 +259,11 @@ test_that("plot.alea_batch validates selected_models distribution type", {
 })
 
 
-test_that("plot.alea_batch validates return_levels columns", {
+test_that("plot.alea_batch validates quantiles columns", {
   skip_if_not_installed("ggplot2")
   
   batch <- list(
-    return_levels = data.frame(
+    quantiles = data.frame(
       station = "A",
       distribution = "gum",
       method = "lmom",
@@ -274,30 +274,30 @@ test_that("plot.alea_batch validates return_levels columns", {
   class(batch) <- c("alea_batch", "list")
   
   expect_error(
-    plot(batch, type = "return_levels"),
+    plot(batch, type = "quantiles"),
     "missing required column"
   )
 })
 
 
-test_that("plot.alea_batch validates return_levels numeric columns", {
+test_that("plot.alea_batch validates quantiles numeric columns", {
   skip_if_not_installed("ggplot2")
   
   batch <- list(
-    return_levels = data.frame(
+    quantiles = data.frame(
       station = "A",
       distribution = "gum",
       method = "lmom",
       return_period = "10",
-      return_level = 120
+      quantile = 120
     )
   )
   
   class(batch) <- c("alea_batch", "list")
   
   expect_error(
-    plot(batch, type = "return_levels"),
-    "`x\\$return_levels\\$return_period` and `x\\$return_levels\\$return_level` must be numeric"
+    plot(batch, type = "quantiles"),
+    "`x\\$quantiles\\$return_period` and `x\\$quantiles\\$quantile` must be numeric"
   )
 })
 
@@ -306,62 +306,62 @@ test_that("plot.alea_batch validates return_period values", {
   skip_if_not_installed("ggplot2")
   
   batch <- list(
-    return_levels = data.frame(
+    quantiles = data.frame(
       station = "A",
       distribution = "gum",
       method = "lmom",
       return_period = 1,
-      return_level = 120
+      quantile = 120
     )
   )
   
   class(batch) <- c("alea_batch", "list")
   
   expect_error(
-    plot(batch, type = "return_levels"),
+    plot(batch, type = "quantiles"),
     "greater than 1"
   )
 })
 
 
-test_that("plot.alea_batch rejects non-finite return levels", {
+test_that("plot.alea_batch rejects non-finite quantiles", {
   skip_if_not_installed("ggplot2")
   
   batch <- list(
-    return_levels = data.frame(
+    quantiles = data.frame(
       station = "A",
       distribution = "gum",
       method = "lmom",
       return_period = c(2, 10),
-      return_level = c(NA_real_, Inf)
+      quantile = c(NA_real_, Inf)
     )
   )
   
   class(batch) <- c("alea_batch", "list")
   
   expect_error(
-    plot(batch, type = "return_levels"),
-    "At least one finite batch return level"
+    plot(batch, type = "quantiles"),
+    "At least one finite batch quantile"
   )
 })
 
 
-test_that("plot.alea_batch drops non-finite return levels when finite values exist", {
+test_that("plot.alea_batch drops non-finite quantiles when finite values exist", {
   skip_if_not_installed("ggplot2")
   
   batch <- list(
-    return_levels = data.frame(
+    quantiles = data.frame(
       station = "A",
       distribution = "gum",
       method = "lmom",
       return_period = c(2, 5, 10),
-      return_level = c(100, NA_real_, 130)
+      quantile = c(100, NA_real_, 130)
     )
   )
   
   class(batch) <- c("alea_batch", "list")
   
-  p <- plot(batch, type = "return_levels")
+  p <- plot(batch, type = "quantiles")
   
   expect_s3_class(p, "ggplot")
   expect_equal(nrow(p$data), 2L)
@@ -710,7 +710,7 @@ test_that("plot.alea_batch selected models uses integer count data", {
 })
 
 
-test_that("plot.alea_batch return-level plot facets by station and supports scales", {
+test_that("plot.alea_batch quantile plot facets by station and supports scales", {
   skip_if_not_installed("ggplot2")
   
   batch <- alea_batch_fit(
@@ -724,9 +724,9 @@ test_that("plot.alea_batch return-level plot facets by station and supports scal
     quiet = TRUE
   )
   
-  p_gumbel <- plot(batch, type = "return_levels", return_period_scale = "gumbel")
-  p_log <- plot(batch, type = "return_levels", return_period_scale = "log")
-  p_linear <- plot(batch, type = "return_levels", return_period_scale = "linear")
+  p_gumbel <- plot(batch, type = "quantiles", return_period_scale = "gumbel")
+  p_log <- plot(batch, type = "quantiles", return_period_scale = "log")
+  p_linear <- plot(batch, type = "quantiles", return_period_scale = "linear")
   
   expect_s3_class(p_gumbel, "ggplot")
   expect_s3_class(p_log, "ggplot")
@@ -735,7 +735,7 @@ test_that("plot.alea_batch return-level plot facets by station and supports scal
   expect_identical(p_gumbel$labels$y, "Quantile")
   expect_true(inherits(p_gumbel$facet, "FacetWrap"))
   expect_error(
-    plot(batch, type = "return_levels", return_period_scale = "unsupported"),
+    plot(batch, type = "quantiles", return_period_scale = "unsupported"),
     "should be one of"
   )
 })
@@ -784,4 +784,36 @@ test_that("plot.alea_batch single diagnostic uses complete rejection levels", {
   expect_true(is.factor(p$data$reject))
   expect_identical(levels(p$data$reject), c("FALSE", "TRUE"))
   expect_identical(p$labels$shape, "Reject null hypothesis")
+})
+
+has_batch_ggplot_geom <- function(p, geom_class) {
+  any(vapply(p$layers, function(layer) inherits(layer$geom, geom_class), logical(1)))
+}
+
+test_that("plot.alea_batch quantile plot can include or omit observed points", {
+  skip_if_not_installed("ggplot2")
+
+  batch <- alea_batch_fit(
+    data = make_plot_batch_example(),
+    station = "station",
+    value = "value",
+    time = "year",
+    distributions = c("gum", "gev"),
+    methods = "lmom",
+    return_period = c(2, 5, 10, 25, 50, 100),
+    quiet = TRUE
+  )
+
+  p_observed <- plot(batch, type = "quantiles", plot_observed = TRUE)
+  p_without_observed <- plot(batch, type = "quantiles", plot_observed = FALSE)
+
+  expect_s3_class(p_observed, "ggplot")
+  expect_s3_class(p_without_observed, "ggplot")
+  expect_true(has_batch_ggplot_geom(p_observed, "GeomPoint"))
+  expect_false(has_batch_ggplot_geom(p_without_observed, "GeomPoint"))
+
+  expect_error(
+    plot(batch, type = "quantiles", plot_observed = NA),
+    "`plot_observed` must be `TRUE` or `FALSE`"
+  )
 })

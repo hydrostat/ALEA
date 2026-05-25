@@ -4,10 +4,14 @@
 \alias{coef.alea_fit}
 \title{Extract fitted model coefficients}
 \usage{
-\method{coef}{alea_fit}(object, ...)
+\method{coef}{alea_fit}(object, type = c("standard", "internal"), ...)
 }
 \arguments{
 \item{object}{An \code{alea_fit} object.}
+
+\item{type}{Character scalar. Use \code{"standard"} to return user-facing
+parameter names (\code{location}, \code{scale}, and \code{shape}). Use \code{"internal"} to
+return distribution-specific internal parameter names.}
 
 \item{...}{Further arguments ignored.}
 }

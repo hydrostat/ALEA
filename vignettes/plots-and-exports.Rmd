@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 ALEA-R plot methods return `ggplot` objects. This makes plots easy to print,
 customize, combine with ordinary `ggplot2` workflows, and save to files.
 
-The plotting layer covers fitted distributions, return levels, bootstrap
+The plotting layer covers fitted distributions, quantiles, bootstrap
 confidence intervals, goodness-of-fit summaries, diagnostics, AI-assisted
 selection, and batch results. The export layer provides helpers for saving one
 plot, several plots, data frames, and flat batch result tables.
@@ -50,7 +50,7 @@ fit
 
 # Fitted-model plots
 
-`plot.alea_fit()` supports density, CDF, Q-Q, P-P, and return-level plots.
+`plot.alea_fit()` supports density, CDF, Q-Q, P-P, and quantile plots.
 
 ```{r fit-density}
 p_density <- plot(fit, type = "density")
@@ -72,21 +72,21 @@ p_pp <- plot(fit, type = "pp")
 p_pp
 ```
 
-```{r fit-return-level}
+```{r fit-quantile}
 p_fit_rl <- plot(
   fit,
-  type = "return_level",
+  type = "quantile",
   return_period = c(2, 5, 10, 25, 50, 100)
 )
 p_fit_rl
 ```
 
-# Return-level plots
+# Quantile plots
 
-Return-level estimates are represented by `alea_return_level` objects.
+Quantile estimates are represented by `alea_quantile` objects.
 
-```{r return-level-object}
-rl <- alea_return_level(
+```{r quantile-object}
+rl <- alea_quantile(
   fit,
   return_period = c(2, 5, 10, 25, 50, 100)
 )
@@ -94,28 +94,28 @@ rl <- alea_return_level(
 rl
 ```
 
-```{r return-level-plot}
+```{r quantile-plot}
 p_rl <- plot(rl)
 p_rl
 ```
 
-Return-level plots use a Gumbel return-period axis by default. The axis can also
+Quantile plots use a Gumbel return-period axis by default. The axis can also
 be displayed on a logarithmic or linear scale.
 
-```{r return-level-plot-log}
+```{r quantile-plot-log}
 plot(rl, return_period_scale = "log")
 ```
 
 # Bootstrap confidence-interval plots
 
-Return-level confidence intervals are represented by `alea_return_level_ci`
+Quantile confidence intervals are represented by `alea_quantile_ci`
 objects. This example uses a small number of bootstrap resamples to keep the
 vignette fast. Real analyses should use a larger value of `n_boot`.
 
-```{r return-level-ci}
+```{r quantile-ci}
 ci <- confint(
   fit,
-  parm = "return_level",
+  parm = "quantile",
   return_period = c(10, 25, 50, 100),
   level = 0.95,
   method = "bootstrap",
@@ -126,7 +126,7 @@ ci <- confint(
 ci
 ```
 
-```{r return-level-ci-plot}
+```{r quantile-ci-plot}
 p_ci <- plot(ci)
 p_ci
 ```
@@ -256,8 +256,8 @@ p_batch_selected <- plot(batch, type = "selected_models")
 p_batch_selected
 ```
 
-```{r batch-return-levels-plot}
-p_batch_rl <- plot(batch, type = "return_levels")
+```{r batch-quantiles-plot}
+p_batch_rl <- plot(batch, type = "quantiles")
 p_batch_rl
 ```
 
@@ -279,7 +279,7 @@ written to a temporary directory so the example does not leave files behind.
 ```{r save-one-plot}
 out_dir <- tempdir()
 
-one_plot_file <- file.path(out_dir, "alea_return_level.png")
+one_plot_file <- file.path(out_dir, "alea_quantile.png")
 
 if (file.exists(one_plot_file)) {
   unlink(one_plot_file)
@@ -304,7 +304,7 @@ Use `alea_save_plots()` to save a named list of plots.
 plot_files <- alea_save_plots(
   plots = list(
     density = p_density,
-    return_level = p_rl,
+    quantile = p_rl,
     selection = p_selection
   ),
   directory = out_dir,
@@ -325,7 +325,7 @@ file.exists(plot_files)
 Use `alea_export()` to export data frames as CSV files.
 
 ```{r export-data-frame}
-rl_file <- file.path(out_dir, "return_levels.csv")
+rl_file <- file.path(out_dir, "quantiles.csv")
 
 alea_export(
   as.data.frame(rl),
@@ -365,7 +365,7 @@ list.files(batch_dir)
 The ALEA-R plotting and export layer is designed for reporting workflows:
 
 - plot methods return `ggplot` objects;
-- return-level plots use a Gumbel return-period axis by default;
+- quantile plots use a Gumbel return-period axis by default;
 - bootstrap confidence intervals can be plotted directly;
 - GOF, diagnostics, AI selection, and batch summaries have dedicated plots;
 - export helpers support plots, data frames, and flat batch result tables.

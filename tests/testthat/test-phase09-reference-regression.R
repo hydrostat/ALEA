@@ -7,7 +7,7 @@
 # - validation CSV has the documented size and stable basic structure;
 # - `alea_ai_model_info()` remains available as an S3 metadata object;
 # - `alea_select()` remains stable at the user-facing level;
-# - GOF and return-level reference workflows remain reproducible for a
+# - GOF and quantile reference workflows remain reproducible for a
 #   deterministic sample.
 #
 # These tests intentionally avoid checking private implementation details
@@ -257,7 +257,7 @@ testthat::test_that("alea_select is stable for explicit bundled model_path", {
   )
 })
 
-testthat::test_that("Deterministic GUM fit keeps stable return-level and GOF structure", {
+testthat::test_that("Deterministic GUM fit keeps stable quantile and GOF structure", {
   x <- phase09_reference_sample()
   
   fit <- alea_fit(x, distribution = "gum", method = "lmom")
@@ -267,20 +267,20 @@ testthat::test_that("Deterministic GUM fit keeps stable return-level and GOF str
   testthat::expect_identical(fit$method, "lmom")
   
   return_period <- c(2, 5, 10, 25, 50, 100)
-  rl <- alea_return_level(fit, return_period = return_period)
+  rl <- alea_quantile(fit, return_period = return_period)
   
-  testthat::expect_s3_class(rl, "alea_return_level")
+  testthat::expect_s3_class(rl, "alea_quantile")
   testthat::expect_equal(nrow(rl), length(return_period))
   testthat::expect_true(
     phase09_has_names(
       rl,
-      c("distribution", "method", "return_period", "probability", "return_level")
+      c("distribution", "method", "return_period", "probability", "quantile")
     )
   )
   testthat::expect_equal(rl$return_period, return_period)
   testthat::expect_equal(rl$probability, 1 - 1 / return_period)
-  testthat::expect_true(all(is.finite(rl$return_level)))
-  testthat::expect_true(all(diff(rl$return_level) > 0))
+  testthat::expect_true(all(is.finite(rl$quantile)))
+  testthat::expect_true(all(diff(rl$quantile) > 0))
   
   gof <- alea_gof(fit, statistics = "all")
   
@@ -320,7 +320,7 @@ testthat::test_that("Reference bootstrap CI remains reproducible with a fixed se
   
   ci_1 <- confint(
     fit,
-    parm = "return_level",
+    parm = "quantile",
     return_period = return_period,
     method = "bootstrap",
     n_boot = 25,
@@ -329,22 +329,22 @@ testthat::test_that("Reference bootstrap CI remains reproducible with a fixed se
   
   ci_2 <- confint(
     fit,
-    parm = "return_level",
+    parm = "quantile",
     return_period = return_period,
     method = "bootstrap",
     n_boot = 25,
     seed = 909
   )
   
-  testthat::expect_s3_class(ci_1, "alea_return_level_ci")
-  testthat::expect_s3_class(ci_2, "alea_return_level_ci")
+  testthat::expect_s3_class(ci_1, "alea_quantile_ci")
+  testthat::expect_s3_class(ci_2, "alea_quantile_ci")
   
   testthat::expect_equal(ci_1, ci_2, tolerance = 1e-12)
   testthat::expect_equal(ci_1$return_period, return_period)
   testthat::expect_true(all(is.finite(ci_1$lower)))
   testthat::expect_true(all(is.finite(ci_1$upper)))
-  testthat::expect_true(all(ci_1$lower <= ci_1$return_level))
-  testthat::expect_true(all(ci_1$return_level <= ci_1$upper))
+  testthat::expect_true(all(ci_1$lower <= ci_1$quantile))
+  testthat::expect_true(all(ci_1$quantile <= ci_1$upper))
   testthat::expect_true(all(ci_1$n_success > 0))
   testthat::expect_true(all(ci_1$n_boot == 25))
 })

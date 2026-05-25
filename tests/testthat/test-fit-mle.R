@@ -35,8 +35,8 @@ test_that("MLE fitting works through alea_fit for all distributions", {
     expect_true(is.list(fit$convergence))
     expect_identical(fit$convergence$method, "mle")
     expect_true(is.finite(fit$convergence$value))
-    expect_named(fit$return_levels, c("T10", "T25"))
-    expect_true(all(is.finite(fit$return_levels)))
+    expect_named(fit$quantiles, c("T10", "T25"))
+    expect_true(all(is.finite(fit$quantiles)))
   }
 })
 

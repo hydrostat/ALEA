@@ -1,4 +1,4 @@
-"case_id","distribution","method","return_period","probability_alea","probability_reference","return_level_alea","return_level_reference","absolute_difference","tolerance","passed"
+"case_id","distribution","method","return_period","probability_alea","probability_reference","quantile_alea","quantile_reference","absolute_difference","tolerance","passed"
 "P13-LMOM-REF-001","gev","lmom",2,0.5,0.5,56.6621780950938,56.6621780950938,0,1e-08,TRUE
 "P13-LMOM-REF-001","gev","lmom",5,0.8,0.8,63.3664731217953,63.3664731217953,0,1e-08,TRUE
 "P13-LMOM-REF-001","gev","lmom",10,0.9,0.9,66.2649532699263,66.2649532699263,0,1e-08,TRUE

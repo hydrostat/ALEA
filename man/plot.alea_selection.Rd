@@ -9,11 +9,18 @@
 \arguments{
 \item{x}{An object of class \code{alea_selection}.}
 
-\item{...}{Additional arguments passed to methods. Currently unused.}
+\item{...}{Additional arguments passed to methods.}
 }
 \value{
 A \code{ggplot} object.
 }
 \description{
 Produces a probability ranking plot from an \code{alea_selection} object.
+}
+\examples{
+x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1,
+       60.3, 45.9, 67.2, 44.6)
+selection <- alea_select(x)
+plot(selection)
+
 }

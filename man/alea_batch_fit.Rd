@@ -62,6 +62,27 @@ An object of class \code{alea_batch}.
 \description{
 Fits one or more probability distributions to multiple stations or sites.
 Batch processing is robust: failures for one station, distribution, method,
-return-level, goodness-of-fit, diagnostics, or optional AI-selection step are
+quantile, goodness-of-fit, diagnostics, or optional AI-selection step are
 recorded in the errors table and do not stop the full workflow.
+}
+\examples{
+data <- data.frame(
+  station = rep(c("A", "B"), each = 10),
+  year = rep(2001:2010, times = 2),
+  value = c(42, 39, 51, 47, 62, 55, 50, 58, 60, 46,
+            50, 47, 61, 56, 75, 66, 60, 70, 72, 55)
+)
+batch <- alea_batch_fit(
+  data,
+  station = "station",
+  time = "year",
+  value = "value",
+  distributions = c("gev", "gum"),
+  methods = "lmom",
+  return_period = c(10, 25),
+  gof = TRUE
+)
+batch
+alea_results(batch, "quantiles")
+
 }

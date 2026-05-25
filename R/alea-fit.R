@@ -1,29 +1,49 @@
-#' Fit a probability distribution to a hydrological sample
+#' Fit ALEA models
 #'
-#' `alea_fit()` fits one supported probability distribution to a numeric
-#' hydrological sample using one estimation method.
+#' `alea_fit()` is the main user-facing entry point for ALEA-R fitting
+#' workflows. It dispatches according to the supplied data and arguments:
 #'
-#' @param x A numeric vector with the observed sample.
-#' @param distribution Character scalar. Distribution to fit. Supported values
-#'   are `"gev"`, `"gpa"`, `"pe3"`, `"ln2"`, `"ln3"`, and `"gum"`.
-#' @param method Character scalar. Estimation method. Supported values are
-#'   `"lmom"`, `"mom"`, and `"mle"`. The default is `"lmom"`.
+#' * one numeric series and one distribution-method combination returns
+#'   an `alea_fit` object;
+#' * one numeric series and multiple distributions or methods returns
+#'   an `alea_compare` object;
+#' * a data frame with `station` and `value` columns returns an `alea_batch`
+#'   object through the batch workflow.
+#'
+#' @param x A numeric vector with one hydrological series, or a data frame for
+#'   batch analysis.
+#' @param distribution Character scalar or vector. Distribution(s) to fit.
+#'   Supported values are `"gev"`, `"gpa"`, `"pe3"`, `"ln2"`, `"ln3"`, and
+#'   `"gum"`. For data-frame input, the default is all supported distributions.
+#' @param method Character scalar or vector. Estimation method(s). Supported
+#'   values are `"lmom"`, `"mom"`, and `"mle"`. The default is `"lmom"`.
 #' @param return_period Optional numeric vector of return periods. If supplied,
-#'   return levels are computed and stored in the fitted object for convenience.
-#'   Return periods must be greater than 1.
-#' @param ... Additional arguments passed to internal fitting routines or
-#'   reserved for future extensions.
+#'   quantiles are computed and stored in the fitted object for convenience.
+#' @param station,value,time Optional column names used when `x` is a data
+#'   frame. Supplying `station` and `value` triggers the batch workflow.
+#' @param gof Logical. For batch workflows, compute goodness-of-fit tables.
+#' @param diagnostics Logical. For batch workflows, compute diagnostics tables.
+#' @param select For batch workflows, use `"none"` or `"ai"`.
+#' @param ai_model Optional pre-loaded FADS_AI light model for batch workflows.
+#' @param ai_model_path Optional path to a FADS_AI light model file for batch
+#'   workflows.
+#' @param method_priority Character vector used by batch AI selection to choose
+#'   the preferred fitted method.
+#' @param quiet Logical. If `TRUE`, suppresses non-essential messages in
+#'   multi-model or batch workflows.
+#' @param ... Additional arguments passed to fitting routines.
 #'
-#' @return An object of class `alea_fit`.
+#' @return An `alea_fit`, `alea_compare`, or `alea_batch` object.
 #'
 #' @details
-#' The fitted object stores the original numeric sample in its `data` field.
-#' This sample is used by downstream workflows such as return-level bootstrap
-#' confidence intervals, goodness-of-fit assessment, diagnostics,
-#' AI-assisted distribution selection, and plotting.
+#' Fitted objects store the original numeric sample in the `data` field. This
+#' sample is used by downstream workflows such as bootstrap quantile confidence
+#' intervals, goodness-of-fit assessment, diagnostics, AI-assisted distribution
+#' selection, and plotting.
 #'
-#' ALEA-R uses the parameterization adopted by Hosking's `lmom` package. For
-#' example, GEV and GPA use `xi`, `alpha`, and `k`.
+#' User-facing coefficient and quantile tables use standardized parameter
+#' columns: `location`, `scale`, and `shape`. Use `alea_dist()` to see how
+#' these standardized columns map to the internal distribution parameters.
 #'
 #' @examples
 #' x <- c(42.1, 38.5, 51.3, 47.0, 62.4, 55.2, 49.8, 58.1)
@@ -32,32 +52,89 @@
 #' fit
 #' coef(fit)
 #'
-#' fit_with_return_levels <- alea_fit(
-#'   x,
-#'   distribution = "gev",
-#'   method = "lmom",
-#'   return_period = c(10, 25, 50, 100)
-#' )
+#' cmp <- alea_fit(x, distribution = c("gev", "gum"), method = c("lmom", "mle"))
+#' cmp
 #'
-#' fit_with_return_levels
+#' q <- alea_quantile(fit, return_period = c(10, 25, 50, 100))
+#' q
 #'
 #' @export
 alea_fit <- function(x,
                      distribution,
                      method = "lmom",
                      return_period = NULL,
+                     station = NULL,
+                     value = NULL,
+                     time = NULL,
+                     gof = FALSE,
+                     diagnostics = FALSE,
+                     select = c("none", "ai"),
+                     ai_model = NULL,
+                     ai_model_path = NULL,
+                     method_priority = c("lmom", "mle", "mom"),
+                     quiet = FALSE,
                      ...) {
+  distribution_was_missing <- missing(distribution)
+
+  if (is.data.frame(x) || !is.null(station) || !is.null(value)) {
+    if (!is.data.frame(x)) {
+      stop("`x` must be a data frame when `station` or `value` is supplied.", call. = FALSE)
+    }
+    if (is.null(station) || is.null(value)) {
+      stop("`station` and `value` must be supplied for batch workflows.", call. = FALSE)
+    }
+    distributions <- if (distribution_was_missing) {
+      c("gev", "gpa", "pe3", "ln2", "ln3", "gum")
+    } else {
+      distribution
+    }
+    select <- match.arg(select)
+    return(alea_batch_fit(
+      data = x,
+      station = station,
+      value = value,
+      time = time,
+      distributions = distributions,
+      methods = method,
+      return_period = return_period,
+      gof = gof,
+      diagnostics = diagnostics,
+      select = select,
+      ai_model = ai_model,
+      ai_model_path = ai_model_path,
+      method_priority = method_priority,
+      quiet = quiet,
+      ...
+    ))
+  }
+
+  if (distribution_was_missing) {
+    stop("`distribution` must be supplied for single-series workflows.", call. = FALSE)
+  }
+
   x <- check_numeric_vector(x, "x", min_length = 2L)
+
+  if (length(distribution) != 1L || length(method) != 1L) {
+    return(alea_compare(
+      x = x,
+      distributions = distribution,
+      methods = method,
+      return_period = return_period,
+      quiet = quiet,
+      ...
+    ))
+  }
+
   distribution <- check_distribution(distribution)
   method <- check_method(method)
 
   fit_fun <- get_fit_function_internal(distribution, method)
   fit_result <- fit_fun(x = x, ...)
 
-  return_levels <- NULL
+  quantiles <- NULL
 
   if (!is.null(return_period)) {
-    return_levels <- alea_return_level_from_params_internal(
+    quantiles <- alea_quantile_from_params_internal(
       distribution = distribution,
       parameters = fit_result$parameters,
       return_period = return_period,
@@ -71,7 +148,7 @@ alea_fit <- function(x,
     method = method,
     parameters = fit_result$parameters,
     convergence = fit_result$convergence,
-    return_levels = return_levels,
+    quantiles = quantiles,
     covariance = fit_result$covariance %||% NULL,
     diagnostics = fit_result$diagnostics %||% NULL,
     warnings = fit_result$warnings %||% character()
@@ -84,7 +161,7 @@ get_fit_function_internal <- function(distribution, method) {
 
   if (is.null(fun)) {
     stop(
-      "Method `", method, "` is not implemented yet for distribution `",
+      "Method `", method, "` is not available for distribution `",
       distribution,
       "`.",
       call. = FALSE
@@ -94,16 +171,16 @@ get_fit_function_internal <- function(distribution, method) {
   fun
 }
 
-alea_return_level_from_params_internal <- function(distribution,
-                                                   parameters,
-                                                   return_period,
-                                                   ...) {
-  name <- paste0("return_level_", distribution, "_internal")
+alea_quantile_from_params_internal <- function(distribution,
+                                           parameters,
+                                           return_period,
+                                           ...) {
+  name <- paste0("quantile_", distribution, "_internal")
   fun <- get0(name, mode = "function", inherits = TRUE)
 
   if (is.null(fun)) {
     stop(
-      "Return-level calculation is not implemented yet for distribution `",
+      "Quantile calculation is not available for distribution `",
       distribution,
       "`.",
       call. = FALSE
@@ -115,12 +192,13 @@ alea_return_level_from_params_internal <- function(distribution,
   values
 }
 
+
 new_alea_fit <- function(data,
                          distribution,
                          method,
                          parameters,
                          convergence,
-                         return_levels = NULL,
+                         quantiles = NULL,
                          covariance = NULL,
                          diagnostics = NULL,
                          warnings = character()) {
@@ -130,7 +208,7 @@ new_alea_fit <- function(data,
     method = method,
     parameters = parameters,
     convergence = convergence,
-    return_levels = return_levels,
+    quantiles = quantiles,
     covariance = covariance,
     diagnostics = diagnostics,
     warnings = warnings,
@@ -178,11 +256,11 @@ print.alea_fit <- function(x, ...) {
   cat("Method:", x$method, "\n")
   cat("Sample size:", x$n, "\n")
   cat("Parameters:\n")
-  print(x$parameters)
+  print(coef(x))
 
-  if (!is.null(x$return_levels)) {
-    cat("Return levels:\n")
-    print(x$return_levels)
+  if (!is.null(x$quantiles)) {
+    cat("Quantiles:\n")
+    print(x$quantiles)
   }
 
   invisible(x)
@@ -191,11 +269,18 @@ print.alea_fit <- function(x, ...) {
 #' Extract fitted model coefficients
 #'
 #' @param object An `alea_fit` object.
+#' @param type Character scalar. Use `"standard"` to return user-facing
+#'   parameter names (`location`, `scale`, and `shape`). Use `"internal"` to
+#'   return distribution-specific internal parameter names.
 #' @param ... Further arguments ignored.
 #'
 #' @return A named numeric vector of fitted parameters.
 #'
 #' @export
-coef.alea_fit <- function(object, ...) {
-  object$parameters
+coef.alea_fit <- function(object, type = c("standard", "internal"), ...) {
+  type <- match.arg(type)
+  if (type == "internal") {
+    return(object$parameters)
+  }
+  standardize_parameters_internal(object$distribution, object$parameters)
 }

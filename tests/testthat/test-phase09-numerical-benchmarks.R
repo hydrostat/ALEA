@@ -6,7 +6,7 @@
 # Confirmed internal signatures:
 # - q_<dist>_internal(p, para)
 # - p_<dist>_internal(q, para)
-# - return_level_<dist>_internal(return_period, para, ...)
+# - quantile_<dist>_internal(return_period, para, ...)
 #
 # ALEA-R uses Hosking/lmom-style numeric parameter vectors in the internal
 # distribution wrappers.
@@ -36,8 +36,8 @@ phase09_q <- function(distribution, p, para) {
   fun(p = p, para = para)
 }
 
-phase09_return_level <- function(distribution, return_period, para) {
-  fun <- get(sprintf("return_level_%s_internal", distribution), mode = "function")
+phase09_quantile <- function(distribution, return_period, para) {
+  fun <- get(sprintf("quantile_%s_internal", distribution), mode = "function")
   fun(return_period = return_period, para = para)
 }
 
@@ -61,20 +61,20 @@ testthat::test_that("Phase 09 benchmark helper assumptions are valid", {
     )
     
     testthat::expect_true(
-      exists(sprintf("return_level_%s_internal", distribution), mode = "function"),
+      exists(sprintf("quantile_%s_internal", distribution), mode = "function"),
       info = paste("distribution:", distribution)
     )
   }
 })
 
-testthat::test_that("GUM return levels match the closed-form Gumbel benchmark", {
+testthat::test_that("GUM quantiles match the closed-form Gumbel benchmark", {
   para <- c(xi = 10, alpha = 2)
   return_period <- c(2, 5, 10, 25, 50, 100)
   
   expected <- para[["xi"]] - para[["alpha"]] *
     log(-log(1 - 1 / return_period))
   
-  actual <- phase09_return_level(
+  actual <- phase09_quantile(
     distribution = "gum",
     return_period = return_period,
     para = para
@@ -85,7 +85,7 @@ testthat::test_that("GUM return levels match the closed-form Gumbel benchmark", 
   testthat::expect_equal(as.numeric(actual), expected, tolerance = 1e-10)
 })
 
-testthat::test_that("Return-level wrappers use the quantile probability convention consistently", {
+testthat::test_that("Quantile wrappers use the quantile probability convention consistently", {
   parameters <- phase09_fixed_parameters()
   return_period <- c(2, 5, 10, 25, 50, 100)
   
@@ -98,7 +98,7 @@ testthat::test_that("Return-level wrappers use the quantile probability conventi
       para = parameters[[distribution]]
     )
     
-    rl_actual <- phase09_return_level(
+    rl_actual <- phase09_quantile(
       distribution = distribution,
       return_period = return_period,
       para = parameters[[distribution]]
@@ -189,12 +189,12 @@ testthat::test_that("LN2 wrapper agrees with the LN3 zero-threshold convention",
   )
 })
 
-testthat::test_that("Fixed benchmark parameters produce monotone return levels", {
+testthat::test_that("Fixed benchmark parameters produce monotone quantiles", {
   parameters <- phase09_fixed_parameters()
   return_period <- c(2, 5, 10, 25, 50, 100)
   
   for (distribution in names(parameters)) {
-    rl <- phase09_return_level(
+    rl <- phase09_quantile(
       distribution = distribution,
       return_period = return_period,
       para = parameters[[distribution]]
