@@ -9,3 +9,5 @@ Thumbs.db
 /Meta/
 examples/output/
 examples/output/*
+README.html
+build/

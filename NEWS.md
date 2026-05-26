@@ -1,3 +1,14 @@
+# ALEA 0.2.1
+
+## Installation fix
+
+- Removed generated vignette build metadata accidentally committed under `build/`.
+- Removed generated `README.html` from the source repository.
+- Fixed GitHub installation with `remotes::install_github("hydrostat/ALEA")`.
+
+No statistical methods, public API functions, supported distributions, examples,
+or workflows were changed from ALEA 0.2.0.
+
 # ALEA 0.2.0
 
 ## Phase 17 — Multi-model single-site workflow
